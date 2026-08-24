@@ -175,11 +175,19 @@ button, input, select, textarea{font-family:inherit; color:inherit;}
 .warranty-countdown.expired{background:rgba(232,67,63,.1); border-color:rgba(232,67,63,.4);}
 .warranty-countdown.expired .big{color:var(--crimson);}
 .premium-emoji {
-  width: 1.2em;
-  height: 1.2em;
+  width: 1.25em;
+  height: 1.25em;
   display: inline-block;
-  vertical-align: -0.2em;
+  vertical-align: -0.25em;
   object-fit: contain;
+  pointer-events: none;
+}
+
+.lottie-emoji {
+  width: 1.25em;
+  height: 1.25em;
+  display: inline-block;
+  vertical-align: -0.25em;
 }
 
 /* ---------- how-to-login guide steps ---------- */
