@@ -21,6 +21,7 @@ def _open_app_keyboard():
 
 
 async def _safe_reply(update: Update, html_text: str, fallback_text: str, reply_markup=None):
+    """Sends HTML with custom emojis; falls back to standard text if Telegram rejects custom emoji IDs."""
     try:
         await update.message.reply_text(html_text, parse_mode="HTML", reply_markup=reply_markup)
     except Exception as err:
@@ -79,7 +80,7 @@ async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         '/myorders — <tg-emoji emoji-id="5264959791213586839">🧾</tg-emoji> Order History\n'
         '/howtobuy — <tg-emoji emoji-id="5312361253610475399">🛒</tg-emoji> របៀបទិញ\n'
         '/howtologin — <tg-emoji emoji-id="6109136102868652214">🔐</tg-emoji> របៀបចូលគណនី\n\n'
-        'Warranty និង FAQ ពេញលេញមាននៅក្នុងផ្ទាំង Help របស់ App។'
+        'Warranty និង FAQ ពេញលេញមាននៅក្នុងផ្ទាំង Help របស់ App。'
     )
     fallback_text = (
         f"💬 ជំនួយ:\n"
@@ -100,7 +101,7 @@ async def howtobuy_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         '<tg-emoji emoji-id="5312361253610475399">🛒</tg-emoji> <b>របៀបទិញ:</b>\n\n'
         '<tg-emoji emoji-id="5382322671679708881">1️⃣</tg-emoji> ចុច "បើក Uchiro Store" ខាងក្រោម\n'
         '<tg-emoji emoji-id="5381990043642502553">2️⃣</tg-emoji> ជ្រើសរើសប្រភេទ (Account / MM2 / Fruit / ...)\n'
-        '<tg-emoji emoji-id="5381879959345985068">3️⃣</tg-emoji> ចុចលើទំនិញ → ចុច "ទិញឥឡូវ"\n'
+        '<tg-emoji emoji-id="5381879959335738545">3️⃣</tg-emoji> ចុចលើទំនិញ → ចុច "ទិញឥឡូវ"\n'
         '<tg-emoji emoji-id="5382054253403577563">4️⃣</tg-emoji> Scan KHQR ដើម្បីទូទាត់ → Upload Screenshot\n'
         '<tg-emoji emoji-id="5391197405553107640">5️⃣</tg-emoji> រង់ចាំ Admin បញ្ជាក់ (ជាធម្មតាលឿនណាស់) — នៅពេលបញ្ជាក់រួច គណនី/ទំនិញនឹងផ្ញើមកអោយភ្លាមតាម Bot នេះ\n\n'
         '<tg-emoji emoji-id="5298877105000439431">🏷️</tg-emoji> មាន Coupon? វាយក្នុងទំព័រទូទាត់ មុនពេល Scan QR។'
@@ -122,7 +123,7 @@ async def howtologin_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         '<tg-emoji emoji-id="6109136102868652214">🔐</tg-emoji> <b>របៀបចូលគណនី (Account ដែលមាន Authenticator):</b>\n\n'
         '<tg-emoji emoji-id="5382322671679708881">1️⃣</tg-emoji> ទាញយក App ឈ្មោះ <b>Google Authenticator</b> ឬ <b>Authy</b> ពី App Store / Play Store\n'
         '<tg-emoji emoji-id="5381990043642502553">2️⃣</tg-emoji> បើក /myorders → ចុច Order → ចុច "មើលគណនីរបស់ខ្ញុំ"\n'
-        '<tg-emoji emoji-id="5381879959345985068">3️⃣</tg-emoji> Copy Name និង Password → ចូល Roblox ដោយប្រើវា\n'
+        '<tg-emoji emoji-id="5381879959335738545">3️⃣</tg-emoji> Copy Name និង Password → ចូល Roblox ដោយប្រើវា\n'
         '<tg-emoji emoji-id="5382054253403577563">4️⃣</tg-emoji> Roblox នឹងសួរលេខកូដ 6 ខ្ទង់ → ត្រឡប់មក App វិញ → Copy លេខកូដ Live → បិទភ្ជាប់\n'
         '<tg-emoji emoji-id="5391197405553107640">5️⃣</tg-emoji> លេខកូដប្រែរាល់ 30 វិនាទី — ចុច "Refresh" បើលេខចាស់ហួសពេល\n\n'
         '<tg-emoji emoji-id="6265015769008969527">⚠️</tg-emoji> កុំលុប Authenticator ចោល — បើលុប Warranty នឹងធ្លាក់ពី 14ថ្ងៃ មក 7ថ្ងៃ។'
