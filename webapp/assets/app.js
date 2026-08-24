@@ -1,445 +1,364 @@
 /* ============================================================
-   UCHIRO STORE — Telegram Mini App logic (real API only)
+   Uchiro Store — Mini App (app.js)
    ============================================================ */
 
 const tg = window.Telegram ? window.Telegram.WebApp : null;
-let itemsById = {};
+if (tg) {
+  tg.ready();
+  tg.expand();
+}
 
-/* ---------- Telegram bootstrap ---------- */
-function initTelegram(){
-  if(!tg){
-    const el = document.getElementById('tg-user');
-    if(el) el.textContent = 'preview';
-    return;
+let CURRENT_LANG = "KM";
+let CURRENT_CATEGORY = "ALL";
+let ALL_ITEMS = [];
+let ACTIVE_ORDER_ID = null;
+let TOTP_INTERVAL = null;
+
+const I18N = {
+  KM: {
+    tab_shop: "ទំនិញ",
+    tab_orders: "Order",
+    tab_help: "ជំនួយ",
+    my_orders: "ការបញ្ជាទិញរបស់ខ្ញុំ",
+    help_title: "ជំនួយ & ព័ត៌មាន",
+    warranty_policy: "គោលការណ៍ធានា (Warranty)",
+    how_to_login_full: "របៀបដំឡើង & ចូលប្រើ",
+    song: "តន្ត្រី",
+    contact_admin: "ទាក់ទង Admin",
+    checkout: "ការទូទាត់",
+    coupon_code: "លេខកូដបញ្ចុះតម្លៃ",
+    apply: "ប្រើ",
+    total: "សរុប",
+    upload_screenshot: "បញ្ចូលរូបភាពផ្ទេរប្រាក់",
+    submit_order: "បញ្ជាក់ការបញ្ជាទិញ",
+    waiting: "កំពុងរង់ចាំការអនុម័ត…",
+    rejected: "ត្រូវបានបដិសេធ",
+    delivered: "ទទួលបានទំនិញរួចរាល់",
+    back_home: "ត្រឡប់ទៅដើម",
+    view_orders: "មើលការបញ្ជាទិញ",
+  },
+  EN: {
+    tab_shop: "Shop",
+    tab_orders: "Orders",
+    tab_help: "Help",
+    my_orders: "My Orders",
+    help_title: "Help & Info",
+    warranty_policy: "Warranty Policy",
+    how_to_login_full: "How to Install & Log In",
+    song: "Music",
+    contact_admin: "Contact Admin",
+    checkout: "Checkout",
+    coupon_code: "Coupon Code",
+    apply: "Apply",
+    total: "Total",
+    upload_screenshot: "Upload Payment Screenshot",
+    submit_order: "Submit Order",
+    waiting: "Waiting for approval…",
+    rejected: "Order Rejected",
+    delivered: "Delivered Successfully",
+    back_home: "Back to Home",
+    view_orders: "View My Orders",
   }
-  tg.ready(); tg.expand();
-  applyTelegramTheme();
-  tg.onEvent('themeChanged', applyTelegramTheme);
-  tg.BackButton.onClick(closeSheet);
-}
-function applyTelegramTheme(){
-  if(!tg || !tg.themeParams) return;
-  const p = tg.themeParams, root = document.documentElement.style;
-  if(p.bg_color) root.setProperty('--void', p.bg_color);
-  if(p.secondary_bg_color) root.setProperty('--surface', p.secondary_bg_color);
-  if(p.text_color) root.setProperty('--ivory', p.text_color);
-  if(p.hint_color) root.setProperty('--slate', p.hint_color);
-  if(tg.setHeaderColor) tg.setHeaderColor('secondary_bg_color');
-  if(tg.setBackgroundColor) tg.setBackgroundColor(p.bg_color || '#0a0b0e');
-}
-function haptic(type){ if(tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred(type || 'light'); }
-function notify(type){ if(tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred(type); }
+};
 
-/* ---------- language toggle ---------- */
-function setLang(lang){
-  currentLang = lang;
-  document.getElementById('lang-label').textContent = lang.toUpperCase();
-  renderChips();
-  renderCollections(Object.values(itemsById));
-  renderCatalog(Object.values(itemsById));
-  document.querySelectorAll('[data-i18n]').forEach(el => el.textContent = t(el.dataset.i18n));
-  document.querySelectorAll('.tab-btn').forEach(b => {
-    const label = { shop: 'tab_shop', orders: 'tab_orders', help: 'tab_help' }[b.dataset.tab];
-    if(label) b.querySelector('.label').textContent = t(label);
-  });
-}
-function toggleLang(){ setLang(currentLang === 'km' ? 'en' : 'km'); haptic('light'); }
-
-/* ---------- tabs ---------- */
-function switchTab(tab){
-  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
-  document.getElementById('screen-' + tab).classList.remove('hidden');
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-  haptic('light');
-  if(tab === 'orders') loadOrders();
-  window.scrollTo(0,0);
+function getInitData() {
+  return tg && tg.initData ? tg.initData : "";
 }
 
-/* ---------- zoom lightbox ---------- */
-function openLightbox(src){
-  document.getElementById('lightbox-img').src = src;
-  document.getElementById('lightbox').classList.add('open');
-  haptic('light');
-}
-function closeLightbox(){ document.getElementById('lightbox').classList.remove('open'); }
-
-/* ---------- catalog ---------- */
-let activeCategory = 'all';
-let allCategories = [];
-
-function pcardHTML(item){
-  const isAccount = item.category === 'Account';
-  const soldOut = item.quantity <= 0;
-  const media = item.photo_url
-    ? `<img src="${item.photo_url}" style="width:100%; height:100%; object-fit:cover; border-radius:14px 14px 0 0;">`
-    : item.category;
-  return `
-    <div class="pcard ${soldOut ? 'sold-out' : ''}">
-      <div class="pcard-media" onclick="${item.photo_url ? `openLightbox('${item.photo_url}')` : `openProduct(${item.id})`}">
-        ${isAccount ? `<div class="warranty-ribbon"><tg-emoji emoji-id="5251203410396458957">🛡️</tg-emoji>${t('warranty_days', item.warranty_days || 14)}</div>` : `<div class="trade-badge"><tg-emoji emoji-id="5346269127059196142">🔄</tg-emoji> ${t('trade')}</div>`}
-        ${item.is_new ? `<div class="new-badge">${t('new')}</div>` : ''}
-        ${soldOut ? `<div class="sold-badge">${t('sold_out')}</div>` : ''}
-        ${media}
-      </div>
-      <div class="pcard-body">
-        <h3 onclick="openProduct(${item.id})">${item.name}</h3>
-        <div class="pcard-foot">
-          <span class="price">$${item.price}</span>
-          <span class="stock">${isAccount ? '' : 'x' + item.quantity}</span>
-        </div>
-        <button class="buy-btn" onclick="openProduct(${item.id})" ${soldOut ? 'disabled' : ''}>${soldOut ? t('sold_out') : t('buy_now')}</button>
-      </div>
-    </div>`;
-}
-
-function renderCatalog(items){
-  itemsById = Object.fromEntries(items.map(i => [i.id, i]));
-  const grid = document.getElementById('product-grid');
-  const filtered = items.filter(i => i.quantity > 0 && (activeCategory === 'all' || i.category === activeCategory));
-  grid.innerHTML = filtered.length ? filtered.map(pcardHTML).join('') :
-    `<div class="empty-state" style="grid-column:1/-1;">—</div>`;
-}
-function renderChips(){
-  const row = document.getElementById('chip-row');
-  const cats = ['all', ...allCategories];
-  row.innerHTML = cats.map(c => `<button class="chip ${c===activeCategory?'active':''}" onclick="setCategory('${c}')">${c==='all'?t('all'):c}</button>`).join('');
-}
-
-function renderCollections(items){
-  const grid = document.getElementById('collection-grid');
-  const counts = {};
-  items.forEach(i => { if(i.quantity > 0) counts[i.category] = (counts[i.category] || 0) + 1; });
-  const tiles = ['all', ...allCategories].map(c => {
-    const label = c === 'all' ? t('all') : c;
-    const emoji = c === 'all' ? '🗂️' : categoryEmoji(c);
-    const count = c === 'all' ? items.filter(i=>i.quantity>0).length : (counts[c] || 0);
-    return `
-      <button class="collection-tile ${c===activeCategory?'active':''}" onclick="setCategory('${c}')">
-        <span class="emoji">${emoji}</span>
-        <span class="label">${label}</span>
-        <span class="count">${count}</span>
-      </button>`;
-  }).join('');
-  grid.innerHTML = tiles;
-}
-
-function setCategory(c){
-  activeCategory = c;
-  renderChips();
-  renderCollections(Object.values(itemsById));
-  renderCatalog(Object.values(itemsById));
-  haptic('light');
-  document.getElementById('product-grid').scrollIntoView({behavior:'smooth', block:'start'});
-}
-
-async function loadCatalog(){
-  try{
-    const data = await API.items();
-    allCategories = data.categories || [];
-    itemsById = Object.fromEntries((data.items||[]).map(i => [i.id, i]));
-    renderChips();
-    renderCollections(data.items || []);
-    renderCatalog(data.items || []);
-  }catch(e){
-    document.getElementById('product-grid').innerHTML = `<div class="empty-state" style="grid-column:1/-1;">…</div>`;
-  }
-}
-
-/* ---------- product detail sheet ---------- */
-let currentItem = null;
-
-function openSheet(id){ document.getElementById(id).classList.add('open'); document.getElementById('backdrop').classList.add('open'); if(tg) tg.BackButton.show(); }
-function closeSheet(){ document.querySelectorAll('.sheet.open').forEach(s => s.classList.remove('open')); document.getElementById('backdrop').classList.remove('open'); if(tg){ tg.BackButton.hide(); tg.MainButton.hide(); } }
-
-function openProduct(id){
-  currentItem = itemsById[id];
-  if(!currentItem) return;
-  const isAccount = currentItem.category === 'Account';
-  document.getElementById('product-sheet-body').innerHTML = `
-    <div class="sheet-media ${currentItem.photo_url ? 'zoomable' : ''}" ${currentItem.photo_url ? `onclick="openLightbox('${currentItem.photo_url}')"` : ''}>
-      ${currentItem.photo_url ? `<img src="${currentItem.photo_url}">` : currentItem.category}
-    </div>
-    <h2>${currentItem.name}</h2>
-    <div class="desc">${currentItem.description || ''}</div>
-    <div class="tag-row">
-      <span class="tag">${currentItem.category}</span>
-      ${isAccount ? `<span class="tag tag-warranty"><tg-emoji emoji-id="5251203410396458957">🛡️</tg-emoji> ${t('warranty_days', currentItem.warranty_days)}</span>` : `<span class="tag">${currentItem.quantity} left</span>`}
-    </div>
-    <div class="row-between"><span class="mono" style="font-size:22px; font-weight:700;">$${currentItem.price}</span></div>
-  `;
-  openSheet('product-sheet');
-  if(tg){
-    tg.MainButton.setText(t('buy_now') + ' — $' + currentItem.price);
-    tg.MainButton.show();
-    tg.MainButton.offClick(goToCheckout);
-    tg.MainButton.onClick(goToCheckout);
-  }
-  haptic('medium');
-}
-
-/* ---------- checkout ---------- */
-let currentQuote = null;
-let selectedPhotoFile = null;
-let appliedCouponCode = null;
-
-async function goToCheckout(){
-  closeSheet();
-  selectedPhotoFile = null; appliedCouponCode = null;
-  document.getElementById('coupon-input').value = '';
-  document.getElementById('coupon-msg').textContent = '';
-  openSheet('checkout-sheet');
-  showCheckoutStage('pending');
-  document.getElementById('checkout-item-name').textContent = currentItem.name;
-  document.getElementById('checkout-qr').innerHTML = `<div class="qr-inner">…</div>`;
-  document.getElementById('checkout-photo-status').textContent = t('no_screenshot');
-  if(tg) tg.MainButton.hide();
-  await refreshQuote();
-}
-
-async function refreshQuote(){
-  try{
-    currentQuote = await API.quote(currentItem.id, appliedCouponCode);
-    const total = currentQuote.total != null ? currentQuote.total : currentItem.price;
-    document.getElementById('checkout-total').textContent = '$' + total;
-    document.getElementById('checkout-qr').innerHTML = currentQuote.qr_url
-      ? `<img src="${currentQuote.qr_url}" onclick="openLightbox('${currentQuote.qr_url}')" class="zoomable" style="cursor:zoom-in;">`
-      : `<div class="qr-inner">QR not set up — contact admin</div>`;
-  }catch(e){
-    document.getElementById('checkout-qr').innerHTML = `<div class="qr-inner">Couldn't load QR</div>`;
-  }
-}
-
-async function applyCoupon(){
-  const code = document.getElementById('coupon-input').value.trim().toUpperCase();
-  if(!code) return;
-  appliedCouponCode = code;
-  const msg = document.getElementById('coupon-msg');
-  await refreshQuote();
-  if(currentQuote && currentQuote.coupon_valid === false){
-    msg.textContent = currentQuote.coupon_error || 'Invalid code';
-    msg.style.color = 'var(--crimson)';
-    appliedCouponCode = null;
-    notify('error');
-  }else if(currentQuote && currentQuote.discount_applied){
-    msg.textContent = '✅ ' + currentQuote.discount_applied;
-    msg.style.color = 'var(--mint)';
-    notify('success');
-  }
-}
-
-function onScreenshotPicked(input){
-  selectedPhotoFile = input.files && input.files[0];
-  document.getElementById('checkout-photo-status').textContent = selectedPhotoFile ? selectedPhotoFile.name : t('no_screenshot');
-}
-
-function showCheckoutStage(stage){
-  ['pending','waiting','rejected','success'].forEach(s =>
-    document.getElementById('checkout-' + s).classList.toggle('hidden', s !== stage));
-}
-
-async function submitOrder(){
-  if(!selectedPhotoFile){
-    notify('error');
-    document.getElementById('checkout-photo-status').style.color = 'var(--crimson)';
-    return;
-  }
-  const btn = document.getElementById('submit-order-btn');
-  btn.disabled = true; btn.textContent = '…';
-  try{
-    const res = await API.submit(currentItem.id, currentQuote && currentQuote.khqr_md5, selectedPhotoFile, appliedCouponCode);
-    if(res.error){ btn.disabled = false; btn.textContent = t('submit_order'); notify('error'); alert(res.error); return; }
-    notify('success'); haptic('heavy');
-    pollOrderStatus(res.order_id);
-  }catch(e){ btn.disabled = false; btn.textContent = t('submit_order'); notify('error'); }
-}
-
-let pollTimer = null;
-function pollOrderStatus(orderId){
-  showCheckoutStage('waiting');
-  document.getElementById('checkout-waiting-order-id').textContent = '#' + orderId;
-  clearInterval(pollTimer);
-  pollTimer = setInterval(async () => {
-    const status = await API.status(orderId);
-    if(status.status === 'approved'){ clearInterval(pollTimer); showDelivery(orderId, status); }
-    else if(status.status === 'rejected'){ clearInterval(pollTimer); showCheckoutStage('rejected'); }
-  }, 4000);
-}
-
-function showDelivery(orderId, status){
-  showCheckoutStage('success');
-  document.getElementById('checkout-item-name-2').textContent = status.item_name || '';
-  document.getElementById('delivery-blocks').innerHTML = deliveryBlocksHTML(orderId, status.fields);
-  notify('success'); haptic('heavy');
-}
-
-function backToHome(){ closeSheet(); switchTab('shop'); }
-function goToMyOrders(){ closeSheet(); switchTab('orders'); }
-
-/* ---------- orders tab ---------- */
-async function loadOrders(){
-  const mount = document.getElementById('orders-list');
-  mount.innerHTML = `<div class="empty-state">…</div>`;
-  try{
-    const data = await API.myOrders();
-    const orders = data.orders || [];
-    if(orders.length === 0){ mount.innerHTML = `<div class="empty-state">${t('no_orders')}</div>`; return; }
-    mount.innerHTML = orders.map(orderCardHTML).join('');
-  }catch(e){
-    mount.innerHTML = `<div class="empty-state">…</div>`;
-  }
-}
-
-function warrantyCountdownHTML(o){
-  if(!o.warranty_expires_at) return '';
-  const remaining = new Date(o.warranty_expires_at).getTime() - Date.now();
-  if(remaining <= 0) return `<div class="warranty-countdown expired"><div class="big">${t('warranty_expired')}</div></div>`;
-  const days = Math.floor(remaining/864e5), hours = Math.floor((remaining%864e5)/36e5);
-  return `<div class="warranty-countdown"><div class="big">${days}d ${hours}h</div><div class="muted mono" style="font-size:10px;">${t('warranty_left')}</div></div>`;
-}
-
-function orderCardHTML(o){
-  const date = new Date(o.created_at).toLocaleDateString(undefined, {month:'short', day:'numeric'});
-  let statusBadge;
-  if(o.status === 'approved') statusBadge = `<span class="pill"><span class="status-dot status-live"></span>${t('delivered')}</span>`;
-  else if(o.status === 'rejected') statusBadge = `<span class="pill"><span class="status-dot status-expired"></span>${t('rejected')}</span>`;
-  else if(o.is_stale) statusBadge = `<span class="pill"><span class="status-dot status-expired"></span>${t('not_confirmed')}</span>`;
-  else statusBadge = `<span class="pill"><span class="status-dot status-warn"></span>${t('waiting')}</span>`;
-
-  return `
-    <div class="order-card" id="order-${o.id}">
-      <div class="row-between">
-        <div><div class="mono muted" style="font-size:11px;">#${o.id} · ${date}</div>
-          <div style="font-weight:600; font-size:13.5px; margin-top:3px;">${o.item_name}</div></div>
-        <div>${statusBadge}</div>
-      </div>
-      ${o.status === 'approved' ? `<button class="btn-primary mt-8" style="margin-top:10px;" onclick="toggleCheckAccount(${o.id})" id="check-btn-${o.id}"><tg-emoji emoji-id="6291893425239234198">🔓</tg-emoji> ${t('check_my_account')}</button>` : ''}
-      ${o.is_stale ? `<a href="https://t.me/${window.ADMIN_USERNAME || ''}" target="_blank" class="btn-secondary mt-8" style="display:block; text-align:center; margin-top:10px;"><tg-emoji emoji-id="5258011929993026890">👤</tg-emoji> ${t('contact_admin')}</a>` : ''}
-      <div id="order-detail-${o.id}" class="hidden"></div>
-    </div>`;
-}
-
-async function toggleCheckAccount(orderId){
-  const box = document.getElementById('order-detail-' + orderId);
-  const btn = document.getElementById('check-btn-' + orderId);
-  if(!box.classList.contains('hidden')){ box.classList.add('hidden'); return; }
-  box.classList.remove('hidden');
-  if(!box.dataset.loaded){
-    btn.textContent = '…';
-    const status = await API.status(orderId);
-    hydrateOrderCard({ id: orderId, ...status });
-    box.dataset.loaded = '1';
-    btn.innerHTML = '<tg-emoji emoji-id="6291893425239234198">🔓</tg-emoji> ' + t('check_my_account');
-  }
-  haptic('medium');
-}
-
-async function hydrateOrderCard(o){
-  const status = o.delivery_info !== undefined ? o : await API.status(o.id);
-  const box = document.getElementById('order-detail-' + o.id);
-  if(!box || status.status !== 'approved') return;
-  box.innerHTML = `
-    ${warrantyCountdownHTML(status)}
-    <div class="mt-8" style="margin-top:10px;">${deliveryBlocksHTML(o.id, status.fields)}</div>
-  `;
-}
-
-/* ---------- tap-to-copy field component ---------- */
-let copyFieldSeq = 0;
-function copyFieldHTML(label, value, opts = {}){
-  const id = 'cf-' + (opts.id || (copyFieldSeq++));
-  const cls = opts.big ? 'cf-value big-code' : 'cf-value';
-  return `
-    <div class="copy-field" id="${id}" onclick="copyField('${id}', this)">
-      <div class="cf-label"><span>${label}</span><span class="cf-icon"><tg-emoji emoji-id="5987635334945444280">📋</tg-emoji></span></div>
-      <div class="${cls}" data-raw="${(value||'').replace(/"/g,'&quot;')}">${value || '—'}</div>
-      ${opts.refreshable ? `<button class="cf-refresh" onclick="event.stopPropagation(); refreshLiveField('${id}', ${opts.orderId})">${t('refresh')}</button>` : ''}
-    </div>`;
-}
-function copyField(fieldId, el){
-  const valueEl = el.querySelector('.cf-value');
-  const text = valueEl ? valueEl.dataset.raw : '';
-  if(!text || text === '—') return;
-  navigator.clipboard.writeText(text);
-  el.classList.add('copied');
-  setTimeout(() => el.classList.remove('copied'), 900);
-  showCopyToast();
-  haptic('light');
-}
-function showCopyToast(){
-  let toast = document.getElementById('copy-toast');
-  if(!toast){
-    toast = document.createElement('div');
-    toast.id = 'copy-toast';
-    toast.className = 'copy-toast';
-    toast.innerHTML = currentLang === 'km' ? '<tg-emoji emoji-id="5904704361182798355">✅</tg-emoji> បានចម្លង!' : '<tg-emoji emoji-id="5904704361182798355">✅</tg-emoji> Copied!';
-    document.body.appendChild(toast);
-  }
-  toast.classList.add('show');
-  clearTimeout(toast._hideTimer);
-  toast._hideTimer = setTimeout(() => toast.classList.remove('show'), 1200);
-}
-async function refreshLiveField(fieldId, orderId){
-  const el = document.getElementById(fieldId);
-  const valueEl = el.querySelector('.cf-value');
-  valueEl.textContent = '…';
-  try{
-    const res = await API.refreshCode(orderId);
-    if(res.code){
-      valueEl.textContent = res.code.slice(0,3) + ' ' + res.code.slice(3);
-      valueEl.dataset.raw = res.code;
+function toggleLang() {
+  CURRENT_LANG = CURRENT_LANG === "KM" ? "EN" : "KM";
+  document.getElementById("lang-label").textContent = CURRENT_LANG;
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    const key = el.getAttribute("data-i18n");
+    if (I18N[CURRENT_LANG][key]) {
+      el.textContent = I18N[CURRENT_LANG][key];
     }
-  }catch(e){}
-  haptic('light');
+  });
+  renderItems();
 }
 
-/* Builds the full 5-block delivery layout: Name, Password, Setup Key,
-   fast-copy Live code (with refresh), and a link to the install guide. */
-function deliveryBlocksHTML(orderId, fields){
-  if(!fields) return '';
-  let html = '';
-  if(fields.login_name) html += copyFieldHTML('<tg-emoji emoji-id="5258011929993026890">👤</tg-emoji> ' + (currentLang==='km'?'ឈ្មោះគណនី':'Account Name'), fields.login_name);
-  if(fields.login_password) html += copyFieldHTML('<tg-emoji emoji-id="5420094143089111506">🔑</tg-emoji> ' + (currentLang==='km'?'លេខសម្ងាត់':'Password'), fields.login_password);
-  if(fields.has_totp && fields.totp_secret){
-    html += copyFieldHTML('<tg-emoji emoji-id="6109136102868652214">🔐</tg-emoji> ' + (currentLang==='km'?'Authenticator Key (ពេញ)':'Authenticator Key (full)'), fields.totp_secret);
-    html += copyFieldHTML('<tg-emoji emoji-id="6107022708376082350">⚡</tg-emoji> ' + (currentLang==='km'?'លេខកូដលឿន (Live)':'Fast code (Live)'), '000 000', {big:true, refreshable:true, orderId, id:'live-'+orderId});
+function switchTab(tab) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.add("hidden"));
+  const activeScreen = document.getElementById("screen-" + tab);
+  if (activeScreen) activeScreen.classList.remove("hidden");
+
+  document.querySelectorAll(".tab-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.tab === tab);
+  });
+
+  if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred("light");
+
+  if (tab === "shop") loadShop();
+  if (tab === "orders") loadOrders();
+}
+
+/* ---------------- SHOP LOGIC ---------------- */
+async function loadShop() {
+  try {
+    const data = await API.items();
+    ALL_ITEMS = data.items || [];
+    renderChips(data.categories || []);
+    renderItems();
+  } catch (e) {
+    console.error("Failed to load shop items", e);
   }
-  if(!fields.login_name && !fields.login_password && fields.delivery_note){
-    html += copyFieldHTML('<tg-emoji emoji-id="5854908544712707500">📦</tg-emoji> ' + (currentLang==='km'?'ព័ត៌មានប្រគល់ជូន':'Delivery note'), fields.delivery_note);
+}
+
+function renderChips(categories) {
+  const mount = document.getElementById("chip-row");
+  if (!mount) return;
+  const cats = ["ALL", ...categories];
+  mount.innerHTML = cats.map(c => `
+    <button class="chip ${c === CURRENT_CATEGORY ? 'active' : ''}" onclick="selectCategory('${c}')">
+      ${c}
+    </button>
+  `).join("");
+}
+
+function selectCategory(cat) {
+  CURRENT_CATEGORY = cat;
+  document.querySelectorAll("#chip-row .chip").forEach(b => {
+    b.classList.toggle("active", b.textContent.trim() === cat);
+  });
+  renderItems();
+}
+
+function renderItems() {
+  const mount = document.getElementById("product-grid");
+  if (!mount) return;
+
+  const filtered = CURRENT_CATEGORY === "ALL" 
+    ? ALL_ITEMS 
+    : ALL_ITEMS.filter(i => i.category === CURRENT_CATEGORY);
+
+  if (!filtered.length) {
+    mount.innerHTML = `<div class="muted" style="grid-column:1/-1; text-align:center; padding:30px;">គ្មានទំនិញក្នុងប្រភេទនេះទេ</div>`;
+    return;
   }
-  html += `
-    <div class="copy-field guide-link" onclick="event.stopPropagation(); openGuideSheet();">
-      <div>
-        <div class="cf-label" style="margin-bottom:2px;"><tg-emoji emoji-id="5406809207947142040">📲</tg-emoji> ${currentLang==='km'?'ជំហានទាំងអស់':'Full guide'}</div>
-        <div class="cf-value">${t('how_to_login_full') || 'How to install & log in'}</div>
+
+  mount.innerHTML = filtered.map(item => `
+    <div class="product-card" onclick="openProduct(${item.id})">
+      ${item.photo_url ? `<img src="${item.photo_url}" class="p-img">` : '<div class="p-img no-img">📦</div>'}
+      <div class="p-details">
+        <div class="p-name">${item.name}</div>
+        <div class="row-between" style="margin-top:6px;">
+          <div class="p-price">$${item.price}</div>
+          <span class="p-stock ${item.quantity > 0 ? 'in' : 'out'}">${item.quantity > 0 ? 'In Stock' : 'Out'}</span>
+        </div>
       </div>
-      <span class="muted">›</span>
-    </div>`;
-  if(fields.has_totp) setTimeout(() => refreshLiveField('cf-live-' + orderId, orderId), 50);
-  return html;
+    </div>
+  `).join("");
 }
 
-/* ---------- help tab: guide sheet + song toggle ---------- */
-function openGuideSheet(){
-  document.getElementById('guide-sheet').classList.add('open');
-  document.getElementById('backdrop').classList.add('open');
-  if(tg) tg.BackButton.show();
-  haptic('light');
-}
-let musicPlaying = false;
-function toggleSong(){
-  const audio = document.getElementById('bg-music');
-  const btn = document.getElementById('song-toggle');
-  musicPlaying = !musicPlaying;
-  if(musicPlaying){ audio.play().catch(()=>{}); btn.innerHTML = '🔊 ' + t('song') + ' ON'; }
-  else{ audio.pause(); btn.innerHTML = '<tg-emoji emoji-id="5388632425314140043">🔈</tg-emoji> ' + t('song') + ' OFF'; }
-  haptic('light');
+function openProduct(id) {
+  const item = ALL_ITEMS.find(i => i.id === id);
+  if (!item) return;
+
+  const body = document.getElementById("product-sheet-body");
+  body.innerHTML = `
+    ${item.photo_url ? `<img src="${item.photo_url}" style="width:100%; border-radius:12px; max-height:220px; object-fit:cover; margin-bottom:12px;">` : ''}
+    <h2 style="font-size:18px; margin-bottom:4px;">${item.name}</h2>
+    <div class="p-price" style="font-size:20px; margin-bottom:10px;">$${item.price}</div>
+    <p class="muted" style="font-size:13px; line-height:1.6; margin-bottom:16px;">${item.description || 'គ្មានការពិពណ៌នាបន្ថែម'}</p>
+    <button class="btn-primary" onclick="openCheckout(${item.id})">ទិញឥឡូវ ($${item.price})</button>
+  `;
+
+  document.getElementById("backdrop").classList.add("active");
+  document.getElementById("product-sheet").classList.add("active");
 }
 
-/* ---------- init ---------- */
-document.addEventListener('DOMContentLoaded', () => {
-  initTelegram();
-  setLang('km');
-  loadCatalog();
-  switchTab('shop');
+/* ---------------- CHECKOUT LOGIC ---------------- */
+let CURRENT_ITEM = null;
+let SCREENSHOT_FILE = null;
+
+async function openCheckout(itemId) {
+  CURRENT_ITEM = ALL_ITEMS.find(i => i.id === itemId);
+  if (!CURRENT_ITEM) return;
+
+  closeSheet();
+
+  document.getElementById("checkout-item-name").textContent = CURRENT_ITEM.name;
+  document.getElementById("checkout-total").textContent = `$${CURRENT_ITEM.price}`;
+  document.getElementById("coupon-input").value = "";
+  document.getElementById("coupon-msg").textContent = "";
+  document.getElementById("checkout-photo-status").textContent = "";
+  SCREENSHOT_FILE = null;
+
+  document.getElementById("checkout-pending").classList.remove("hidden");
+  document.getElementById("checkout-waiting").classList.add("hidden");
+  document.getElementById("checkout-rejected").classList.add("hidden");
+  document.getElementById("checkout-success").classList.add("hidden");
+
+  document.getElementById("backdrop").classList.add("active");
+  document.getElementById("checkout-sheet").classList.add("active");
+
+  const quote = await API.quote({ item_id: itemId, init_data: getInitData() });
+  const qrBox = document.getElementById("checkout-qr");
+  if (quote.qr_url) {
+    qrBox.innerHTML = `<img src="${quote.qr_url}" style="width:180px; height:180px; margin:auto; display:block; border-radius:8px;">`;
+  } else {
+    qrBox.innerHTML = `<div class="muted" style="font-size:12px; text-align:center; padding:20px;">${quote.note || 'Scan KHQR'}</div>`;
+  }
+}
+
+function onScreenshotPicked(input) {
+  if (input.files && input.files[0]) {
+    SCREENSHOT_FILE = input.files[0];
+    document.getElementById("checkout-photo-status").textContent = `Selected: ${SCREENSHOT_FILE.name}`;
+  }
+}
+
+async function applyCoupon() {
+  const code = document.getElementById("coupon-input").value.trim();
+  if (!code || !CURRENT_ITEM) return;
+
+  const quote = await API.quote({
+    item_id: CURRENT_ITEM.id,
+    coupon_code: code,
+    init_data: getInitData()
+  });
+
+  const msg = document.getElementById("coupon-msg");
+  if (quote.coupon_valid) {
+    msg.style.color = "var(--mint)";
+    msg.textContent = `Applied: ${quote.discount_applied}`;
+    document.getElementById("checkout-total").textContent = `$${quote.total}`;
+  } else {
+    msg.style.color = "var(--crimson)";
+    msg.textContent = quote.coupon_error || "Invalid coupon";
+  }
+}
+
+async function submitOrder() {
+  if (!CURRENT_ITEM) return;
+  if (!SCREENSHOT_FILE) {
+    return alert("សូម Upload រូបភាពផ្ទេរប្រាក់ជាមុនសិន");
+  }
+
+  const form = new FormData();
+  form.append("init_data", getInitData());
+  form.append("item_id", CURRENT_ITEM.id);
+  form.append("coupon_code", document.getElementById("coupon-input").value.trim());
+  form.append("photo", SCREENSHOT_FILE);
+
+  document.getElementById("submit-order-btn").disabled = true;
+  document.getElementById("submit-order-btn").textContent = "Uploading…";
+
+  try {
+    const res = await API.submitOrder(form);
+    if (res.error) {
+      alert(res.error);
+      document.getElementById("submit-order-btn").disabled = false;
+      document.getElementById("submit-order-btn").textContent = "Submit order";
+      return;
+    }
+
+    ACTIVE_ORDER_ID = res.order_id;
+    document.getElementById("checkout-pending").classList.add("hidden");
+    document.getElementById("checkout-waiting").classList.remove("hidden");
+    document.getElementById("checkout-waiting-order-id").textContent = `#${res.order_id}`;
+
+    startOrderPolling(res.order_id);
+  } catch (e) {
+    alert("Error submitting order");
+    document.getElementById("submit-order-btn").disabled = false;
+  }
+}
+
+function startOrderPolling(orderId) {
+  const poller = setInterval(async () => {
+    try {
+      const st = await API.orderStatus(orderId, getInitData());
+      if (st.status === "approved") {
+        clearInterval(poller);
+        showDelivery(st);
+      } else if (st.status === "rejected") {
+        clearInterval(poller);
+        document.getElementById("checkout-waiting").classList.add("hidden");
+        document.getElementById("checkout-rejected").classList.remove("hidden");
+      }
+    } catch (e) {}
+  }, 3000);
+}
+
+function showDelivery(data) {
+  document.getElementById("checkout-waiting").classList.add("hidden");
+  document.getElementById("checkout-success").classList.remove("hidden");
+  document.getElementById("checkout-item-name-2").textContent = data.item_name;
+
+  let html = `<div class="order-card" style="background:var(--surface-2); font-size:13px; line-height:1.6;">`;
+  if (data.fields) {
+    if (data.fields.login_name) html += `<div><strong>Username:</strong> <code>${data.fields.login_name}</code></div>`;
+    if (data.fields.login_password) html += `<div><strong>Password:</strong> <code>${data.fields.login_password}</code></div>`;
+  }
+  if (data.delivery_info) {
+    html += `<div style="margin-top:8px;">${data.delivery_info}</div>`;
+  }
+  html += `</div>`;
+  document.getElementById("delivery-blocks").innerHTML = html;
+}
+
+/* ---------------- ORDERS LIST ---------------- */
+async function loadOrders() {
+  const mount = document.getElementById("orders-list");
+  mount.innerHTML = `<div class="order-card">Loading…</div>`;
+  try {
+    const data = await API.myOrders(getInitData());
+    if (!data.orders || !data.orders.length) {
+      mount.innerHTML = `<div class="order-card">មិនទាន់មានការបញ្ជាទិញនៅឡើយទេ</div>`;
+      return;
+    }
+    mount.innerHTML = data.orders.map(o => `
+      <div class="order-card">
+        <div class="row-between">
+          <div>
+            <span class="mono muted">#${o.id}</span>
+            <div style="font-weight:600; margin-top:2px;">${o.item_name}</div>
+          </div>
+          <span class="status-chip chip-${o.status}">${o.status}</span>
+        </div>
+      </div>
+    `).join("");
+  } catch (e) {
+    mount.innerHTML = `<div class="order-card">Error loading orders</div>`;
+  }
+}
+
+/* ---------------- MODALS & HELPERS ---------------- */
+function closeSheet() {
+  document.getElementById("backdrop").classList.remove("active");
+  document.querySelectorAll(".sheet").forEach(s => s.classList.remove("active"));
+}
+
+function openGuideSheet() {
+  document.getElementById("backdrop").classList.add("active");
+  document.getElementById("guide-sheet").classList.add("active");
+}
+
+function backToHome() {
+  closeSheet();
+  switchTab("shop");
+}
+
+function goToMyOrders() {
+  closeSheet();
+  switchTab("orders");
+}
+
+function toggleSong() {
+  const audio = document.getElementById("bg-music");
+  const btn = document.getElementById("song-toggle");
+  if (!audio) return;
+  if (audio.paused) {
+    audio.play().then(() => {
+      btn.innerHTML = `<tg-emoji emoji-id="5388632425314140043">🔊</tg-emoji> <span data-i18n="song">Music</span> ON`;
+    }).catch(() => {});
+  } else {
+    audio.pause();
+    btn.innerHTML = `<tg-emoji emoji-id="5388632425314140043">🔈</tg-emoji> <span data-i18n="song">Music</span> OFF`;
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  switchTab("shop");
 });
-```[cite: 1, 10]
