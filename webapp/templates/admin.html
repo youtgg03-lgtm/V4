@@ -3,11 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-<title>Uchiro Store</title>
+<title>Uchiro Admin</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+Khmer:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{{ url_for('assets', filename='style.css') }}">
-<style>body{font-family:'Noto Sans Khmer','Inter',-apple-system,sans-serif;}</style>
+<style>
+body{font-family:'Noto Sans Khmer','Inter',-apple-system,sans-serif;}
+.stat-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;}
+.stat-card{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:14px;}
+.stat-card .num{font-family:var(--font-display); font-size:24px; margin-top:4px;}
+table{width:100%; border-collapse:collapse; font-size:12px;}
+th{text-align:left; color:var(--slate); font-family:var(--font-mono); font-weight:400; font-size:10px; text-transform:uppercase; padding:8px 4px; border-bottom:1px solid var(--line);}
+td{padding:9px 4px; border-bottom:1px solid var(--line); vertical-align:middle;}
+.status-chip{font-family:var(--font-mono); font-size:10px; padding:3px 8px; border-radius:999px;}
+.chip-pending{background:rgba(255,178,48,.15); color:var(--amber);}
+.chip-approved{background:rgba(62,207,142,.15); color:var(--mint);}
+.mini-btn{background:var(--surface-2); border:1px solid var(--line); color:var(--slate); border-radius:7px; padding:6px 11px; font-size:11px;}
+</style>
 </head>
 <body>
   <!-- ដាក់កូដនេះមុន </body> ក្នុងឯកសារ index.html របស់អ្នក -->
@@ -125,207 +137,243 @@ document.addEventListener('DOMContentLoaded', loadPremiumEmojis);
 </script>
 
 <div id="app">
-
   <div class="topbar">
-    <div class="brand">
-      <span class="mark">{% if logo_url %}<img src="{{ logo_url }}">{% else %}U{% endif %}</span>
-      Uchiro Store
-    </div>
-    <div class="topbar-right">
-      <button class="lang-toggle" onclick="toggleLang()">🌐 <strong id="lang-label">KM</strong></button>
-    </div>
+    <div class="brand"><span class="mark">U</span> Admin Panel</div>
+    <div class="pill"><span class="status-dot status-live"></span>Bots online</div>
   </div>
 
-  <!-- ===================== SHOP ===================== -->
-  <div id="screen-shop" class="screen">
-    <div class="mini-hero">
-      <div class="mini-aura"><div class="ring"></div><div class="ring"></div><div class="core"></div></div>
-      <div class="mini-hero-content">
-        {% if logo_url %}<img src="{{ logo_url }}" class="hero-logo">{% endif %}
-        <h1>UCHIRO</h1>
-        <div class="eyebrow">Blox Fruits · Cambodia 🇰🇭</div>
-      </div>
+  <!-- ===================== DASHBOARD ===================== -->
+  <div id="screen-dash" class="screen">
+    <div class="eyebrow" style="justify-content:flex-start; margin-bottom:12px;">ថ្ងៃនេះ</div>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="muted" style="font-size:11px;">Order កំពុងរង់ចាំ</div><div class="num" id="s-pending">-</div></div>
+      <div class="stat-card"><div class="muted" style="font-size:11px;">Order អនុម័តរួច</div><div class="num" id="s-approved">-</div></div>
+      <div class="stat-card"><div class="muted" style="font-size:11px;">ស្តុកសរុប</div><div class="num" id="s-items">-</div></div>
+      <div class="stat-card"><div class="muted" style="font-size:11px;">Coupon កំពុងដំណើរការ</div><div class="num" id="s-coupons">-</div></div>
     </div>
-
-    <div class="collection-grid" id="collection-grid"></div>
-    <div class="chip-row" id="chip-row"></div>
-    <div class="pgrid" id="product-grid"></div>
+    <div class="order-card">
+      <div style="font-weight:700; margin-bottom:6px; font-size:13px;">ទំនិញនៅជា Draft</div>
+      <p class="muted" style="font-size:12px; margin-bottom:12px;" id="draft-note"></p>
+      <button class="mini-btn" style="width:100%; padding:10px;" onclick="releaseAll()">🚀 Release all drafts</button>
+    </div>
   </div>
 
   <!-- ===================== ORDERS ===================== -->
   <div id="screen-orders" class="screen hidden">
-    <div class="eyebrow" style="justify-content:flex-start; margin-bottom:14px;" data-i18n="my_orders">My orders</div>
-    <div id="orders-list"></div>
+    <div class="eyebrow" style="justify-content:flex-start; margin-bottom:12px;">Order កំពុងរង់ចាំ</div>
+    <div id="admin-orders"></div>
   </div>
 
-  <!-- ===================== HELP ===================== -->
-  <div id="screen-help" class="screen hidden">
-    <div class="eyebrow" style="justify-content:flex-start; margin-bottom:14px;" data-i18n="help_title">Help</div>
-
-    <div class="order-card">
-      <div style="font-weight:700; margin-bottom:10px;" data-i18n="warranty_policy">Warranty policy</div>
-      <div class="row-between" style="margin-bottom:8px;"><span class="pill"><span class="status-dot status-live"></span>14 ថ្ងៃ</span><span class="muted" style="font-size:11px;">ស្តង់ដារ គិតពីថ្ងៃទទួល</span></div>
-      <div class="row-between" style="margin-bottom:8px;"><span class="pill"><span class="status-dot status-warn"></span>7 ថ្ងៃ</span><span class="muted" style="font-size:11px;">បើលុប Authenticator ចោល</span></div>
-      <div class="row-between"><span class="pill"><span class="status-dot status-expired"></span>0</span><span class="muted" style="font-size:11px;">បើលុប Email + Code ទាំងអស់</span></div>
+  <!-- ===================== PRODUCTS ===================== -->
+  <div id="screen-products" class="screen hidden">
+    <div class="row-between" style="margin-bottom:12px;">
+      <div class="eyebrow" style="justify-content:flex-start;">ទំនិញ</div>
+      <button class="mini-btn" onclick="toggleAddForm()">+ បន្ថែម</button>
     </div>
 
-    <div class="order-card" onclick="openGuideSheet()" style="cursor:pointer;">
-      <div class="row-between">
-        <div style="font-weight:700;" data-i18n="how_to_login_full">How to install & log in</div>
-        <span class="muted">›</span>
+    <div class="order-card hidden" id="add-form">
+      <div class="field">
+        <label>ប្រភេទផលិតផល</label>
+        <select id="new-kind" onchange="onKindChange()">
+          <option value="account">📦 Account (មានតែ 1)</option>
+          <option value="item">⚡ Item — Fruit/Gamepass/MM2/... (មានស្តុក)</option>
+        </select>
       </div>
-      <p class="muted" style="font-size:12.5px; line-height:1.6; margin-top:8px;">📲 ចុចទីនេះ — ជំហានទាំង 5 ពីទាញយក App រហូតដល់ចូលគណនីជោគជ័យ។</p>
-    </div>
-
-    <div class="order-card">
-      <button id="song-toggle" class="btn-secondary" onclick="toggleSong()">🔈 <span data-i18n="song">Music</span> OFF</button>
-      <audio id="bg-music" loop src="{{ music_url }}"></audio>
-    </div>
-
-    <div class="order-card">
-      <div style="font-weight:700; margin-bottom:10px;" data-i18n="contact_admin">Contact admin</div>
-      <div class="btn-row">
-        <a href="https://t.me/{{ admin_username }}" target="_blank" class="btn-primary" style="display:flex; align-items:center; justify-content:center;">👤 Admin</a>
-        <a href="https://t.me/{{ channel_username }}" target="_blank" class="btn-secondary" style="display:flex; align-items:center; justify-content:center;">📢 Channel</a>
+      <div class="field" id="category-field">
+        <label>ប្រភេទ</label>
+        <select id="new-category">{% for cat in categories %}<option>{{ cat }}</option>{% endfor %}</select>
       </div>
+      <div class="field"><label>ឈ្មោះ</label><input id="new-name" type="text" placeholder="ឧ. Buddha V2"></div>
+      <div class="field"><label>តម្លៃ ($)</label><input id="new-price" type="number" step="0.01"></div>
+
+      <!-- ITEM ONLY: stock -->
+      <div class="field" id="qty-field"><label>ស្តុក</label><input id="new-qty" type="number" placeholder="ចំនួន"></div>
+
+      <!-- ACCOUNT ONLY: warranty + credentials + video -->
+      <div id="account-fields" class="hidden">
+        <div class="field">
+          <label>Warranty</label>
+          <select id="new-warranty">
+            <option value="7">7 ថ្ងៃ</option>
+            <option value="14" selected>14 ថ្ងៃ (ស្តង់ដារ)</option>
+            <option value="30">30 ថ្ងៃ</option>
+          </select>
+        </div>
+        <div class="field"><label>ពិពណ៌នា/លម្អិតគណនី (Caption)</label><textarea id="new-desc" rows="3" placeholder="ឧ. Blox Fruits Dragon Awakened, Max Melee..."></textarea></div>
+        <div class="field"><label>Login name (ទុកទទេ = មិនទាន់មាន)</label><input id="new-login" type="text"></div>
+        <div class="field"><label>Password (ទុកទទេ = មិនទាន់មាន)</label><input id="new-password" type="text"></div>
+        <div class="field"><label>Authenticator secret key (ទុកទទេ = មិនប្រើ 2FA)</label><input id="new-totp" type="text"></div>
+        <div class="field"><label>រូបភាពគណនី</label><input id="new-photo" type="file" accept="image/*"></div>
+        <div class="field"><label>វីដេអូគណនី (ស្រេចចិត្ត)</label><input id="new-video" type="file" accept="video/*"></div>
+      </div>
+      <div class="field" id="item-photo-field"><label>រូបភាព</label><input id="new-photo-item" type="file" accept="image/*"></div>
+
+      <button class="mini-btn" style="width:100%; padding:11px;" onclick="addProduct()">រក្សាទុក (Draft — ប្រើ /release ដើម្បី Publish)</button>
     </div>
+
+    <div id="admin-products"></div>
+  </div>
+
+  <!-- ===================== COUPONS ===================== -->
+  <div id="screen-coupons" class="screen hidden">
+    <div class="eyebrow" style="justify-content:flex-start; margin-bottom:12px;">Coupon</div>
+    <div class="toast-banner" style="margin-bottom:12px;">បន្ថែម Coupon តាម Bot ដោយប្រើ <span class="mono">/addcoupon code percent|fixed amount max_uses</span> — ទីនេះសម្រាប់មើល និងបិទប៉ុណ្ណោះ។</div>
+    <table><thead><tr><th>Code</th><th>Off</th><th>ប្រើ</th><th></th></tr></thead><tbody id="coupons-table"></tbody></table>
   </div>
 
   <div class="tabbar">
-    <button class="tab-btn" data-tab="shop" onclick="switchTab('shop')"><span class="icon">🛍️</span><span class="label" data-i18n="tab_shop">Shop</span></button>
-    <button class="tab-btn" data-tab="orders" onclick="switchTab('orders')"><span class="icon">🧾</span><span class="label" data-i18n="tab_orders">Orders</span></button>
-    <button class="tab-btn" data-tab="help" onclick="switchTab('help')"><span class="icon">💬</span><span class="label" data-i18n="tab_help">Help</span></button>
+    <button class="tab-btn" data-tab="dash" onclick="switchTab('dash')"><span class="icon">📊</span>Home</button>
+    <button class="tab-btn" data-tab="orders" onclick="switchTab('orders')"><span class="icon">🧾</span>Order</button>
+    <button class="tab-btn" data-tab="products" onclick="switchTab('products')"><span class="icon">📦</span>ទំនិញ</button>
+    <button class="tab-btn" data-tab="coupons" onclick="switchTab('coupons')"><span class="icon">🏷️</span>Coupon</button>
   </div>
 </div>
 
-<!-- ===================== ZOOM LIGHTBOX ===================== -->
-<div class="lightbox" id="lightbox" onclick="closeLightbox()">
-  <button class="lightbox-close">✕</button>
-  <img id="lightbox-img" src="">
-</div>
-
-<!-- ===================== PRODUCT SHEET ===================== -->
-<div class="sheet-backdrop" id="backdrop" onclick="closeSheet()"></div>
-<div class="sheet" id="product-sheet">
-  <div class="sheet-handle"></div>
-  <div id="product-sheet-body"></div>
-</div>
-
-<!-- ===================== CHECKOUT SHEET ===================== -->
-<div class="sheet" id="checkout-sheet">
-  <div class="sheet-handle"></div>
-
-  <div id="checkout-pending">
-    <div class="eyebrow" style="justify-content:flex-start;" data-i18n="checkout">Checkout</div>
-    <h2 style="margin:10px 0 4px; font-size:16px;" id="checkout-item-name"></h2>
-
-    <div class="field" style="margin-top:14px;">
-      <label data-i18n="coupon_code">Coupon code</label>
-      <div style="display:flex; gap:8px;">
-        <input type="text" id="coupon-input" placeholder="UCHIRO10" style="flex:1; text-transform:uppercase;">
-        <button onclick="applyCoupon()" class="btn-secondary" style="width:auto; padding:0 16px;" data-i18n="apply">Apply</button>
-      </div>
-      <div id="coupon-msg" class="mono" style="font-size:11px; margin-top:6px;"></div>
-    </div>
-
-    <div class="row-between" style="font-size:16px; font-weight:700;"><span data-i18n="total">Total</span><span class="mono" id="checkout-total">$0</span></div>
-    <div class="qr-box" id="checkout-qr"></div>
-
-    <div class="field">
-      <label data-i18n="upload_screenshot">Upload payment screenshot</label>
-      <input type="file" accept="image/*" capture="environment" onchange="onScreenshotPicked(this)">
-      <div class="mono" id="checkout-photo-status" style="font-size:11px; margin-top:6px; color:var(--slate);"></div>
-    </div>
-
-    <button id="submit-order-btn" onclick="submitOrder()" class="btn-primary" data-i18n="submit_order">Submit order</button>
-  </div>
-
-  <div id="checkout-waiting" class="hidden">
-    <div class="eyebrow" style="justify-content:flex-start;">⏳ <span data-i18n="waiting">Waiting…</span></div>
-    <p class="muted mt-8" style="font-size:13px; margin:10px 0 16px;">Order <span class="mono" id="checkout-waiting-order-id"></span></p>
-    <div class="bar"><div class="bar-fill" style="width:60%;"></div></div>
-  </div>
-
-  <div id="checkout-rejected" class="hidden">
-    <div class="eyebrow" style="justify-content:flex-start; color:var(--crimson);">❌ <span data-i18n="rejected">Rejected</span></div>
-    <a href="https://t.me/{{ admin_username }}" target="_blank" class="btn-secondary" style="display:block; text-align:center; margin-top:12px;">👤 Contact admin</a>
-  </div>
-
-  <div id="checkout-success" class="hidden">
-    <div class="eyebrow" style="justify-content:flex-start;" data-i18n="delivered">Delivered</div>
-    <h2 style="margin:10px 0 4px; font-size:16px;" id="checkout-item-name-2"></h2>
-    <div class="mt-16" id="delivery-blocks"></div>
-    <div class="btn-row">
-      <button onclick="backToHome()" class="btn-secondary" data-i18n="back_home">Back to home</button>
-      <button onclick="goToMyOrders()" class="btn-primary" data-i18n="view_orders">My orders</button>
-    </div>
-  </div>
-</div>
-
-<!-- ===================== HOW-TO-LOGIN GUIDE SHEET ===================== -->
-<div class="sheet" id="guide-sheet">
-  <div class="sheet-handle"></div>
-  <div class="eyebrow" style="justify-content:flex-start;">📲 <span data-i18n="how_to_login_full">How to install & log in</span></div>
-
-  <div class="guide-step">
-    <div class="guide-num">1</div>
-    <div>
-      <div class="guide-title">មានវិធីពីរ ជ្រើសយកមួយ</div>
-      <div class="guide-desc">
-        <strong>⚡ លឿនបំផុត:</strong> គ្រាន់តែ Copy លេខកូដ 6 ខ្ទង់ដែល Refresh ស្រាប់ក្នុង App នេះ — មិនចាំបាច់ដំឡើងអ្វីទេ។<br>
-        <strong>🔑 អចិន្ត្រៃយ៍:</strong> ថតចម្លង "Setup Key" ដាក់ក្នុង App Authenticator ផ្ទាល់ខ្លួន ដើម្បីទទួលបានលេខកូដដោយខ្លួនឯង គ្រប់ពេល។
-      </div>
-    </div>
-  </div>
-  <div class="guide-step">
-    <div class="guide-num">2</div>
-    <div>
-      <div class="guide-title">(ស្រេចចិត្ត) ទាញយក App Authenticator</div>
-      <div class="guide-desc">ទាញយក <strong>Google Authenticator</strong> ឬ <strong>Authy</strong> ពី App Store (iPhone) ឬ Play Store (Android) — ឥតគិតថ្លៃ។ ចាំបាច់តែពេលចង់ប្រើវិធី "អចិន្ត្រៃយ៍" ខាងលើ។</div>
-    </div>
-  </div>
-  <div class="guide-step">
-    <div class="guide-num">3</div>
-    <div>
-      <div class="guide-title">ចូល "ការបញ្ជាទិញរបស់ខ្ញុំ"</div>
-      <div class="guide-desc">ចុចផ្ទាំង 🧾 Orders ខាងក្រោម → ចុច Order ដែល "ប្រគល់ជូនរួច ✅" → ចុច "🔓 មើលគណនីរបស់ខ្ញុំ"។</div>
-    </div>
-  </div>
-  <div class="guide-step">
-    <div class="guide-num">4</div>
-    <div>
-      <div class="guide-title">Copy Name & Password</div>
-      <div class="guide-desc">ចុចប៊ូតុង Copy ក្បែរ Name និង Password → បើក Roblox App → ចូល (Login) ដោយប្រើវា។</div>
-    </div>
-  </div>
-  <div class="guide-step">
-    <div class="guide-num">5</div>
-    <div>
-      <div class="guide-title">Roblox សុំលេខកូដ 6 ខ្ទង់</div>
-      <div class="guide-desc">ត្រឡប់មកទំព័រ "មើលគណនីរបស់ខ្ញុំ" វិញ → ចុច Copy ក្បែរលេខកូដ Live (ឬបើក App Authenticator ផ្ទាល់ខ្លួន បើអ្នកបានដំឡើង Setup Key) → ត្រឡប់ទៅ Roblox → បិទភ្ជាប់លេខកូដនោះ។</div>
-    </div>
-  </div>
-  <div class="guide-step">
-    <div class="guide-num">6</div>
-    <div>
-      <div class="guide-title">លេខកូដផុតកំណត់ភ្លាមៗ</div>
-      <div class="guide-desc">លេខកូដប្រែរាល់ 30 វិនាទី — បើវាមិនដំណើរការទេ សូមចុច "Refresh" យកលេខថ្មី រួចព្យាយាមម្តងទៀត។</div>
-    </div>
-  </div>
-
-  <div class="toast-banner" style="margin-top:6px;">
-    <span>⚠️</span>
-    <div><strong>កុំលុប</strong> Authenticator ចោល — Warranty នឹងធ្លាក់ពី 14 ថ្ងៃ មក 7 ថ្ងៃ។ បើលុប Email + Code ទាំងអស់ គ្មាន Warranty ទៀតទេ។</div>
-  </div>
-
-  <button onclick="closeSheet()" class="btn-primary mt-16">យល់ហើយ 👍</button>
-</div>
-
-<script>
-  window.ADMIN_USERNAME = "{{ admin_username }}";
-  window.CHANNEL_USERNAME = "{{ channel_username }}";
-</script>
 <script src="{{ url_for('assets', filename='data.js') }}"></script>
-<script src="{{ url_for('assets', filename='app.js') }}"></script>
+<script>
+const tg = window.Telegram ? window.Telegram.WebApp : null;
+if(tg){ tg.ready(); tg.expand(); }
+
+function switchTab(tab){
+  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  document.getElementById('screen-' + tab).classList.remove('hidden');
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  if(tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+  if(tab === 'products') loadProducts();
+  if(tab === 'orders') loadOrders();
+  if(tab === 'coupons') loadCoupons();
+  if(tab === 'dash') loadDashboard();
+}
+
+/* ---- dashboard (derived from real /api/admin/items + /api/admin/orders + /api/admin/coupons) ---- */
+async function loadDashboard(){
+  try{
+    const [itemsRes, ordersRes, couponsRes] = await Promise.all([API.adminItems(), API.adminOrders(), API.adminCoupons().catch(()=>({coupons:[]}))]);
+    const items = itemsRes.items || [], orders = ordersRes.orders || [];
+    document.getElementById('s-items').textContent = items.reduce((a,i)=>a+(i.quantity||0),0);
+    document.getElementById('s-pending').textContent = orders.filter(o=>o.status==='pending').length;
+    document.getElementById('s-approved').textContent = orders.filter(o=>o.status==='approved').length;
+    document.getElementById('s-coupons').textContent = (couponsRes.coupons||[]).filter(c=>c.active).length;
+    document.getElementById('draft-note').textContent = items.filter(i=>!i.published).length + ' ទំនិញកំពុងជា Draft';
+  }catch(e){}
+}
+async function releaseAll(){
+  const res = await fetch('/api/admin/items/release-all', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ init_data: getInitData() })
+  }).then(r => r.json());
+  if(res.error) return alert(res.error);
+  if(tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+  alert(`បាន Release ${res.released} ទំនិញ`);
+  loadDashboard();
+}
+
+/* ---- orders: real GET, approve/reject via ⚠️NEW /api/admin/orders/<id>/appr|rej ---- */
+async function loadOrders(){
+  const mount = document.getElementById('admin-orders');
+  mount.innerHTML = `<div class="order-card">…</div>`;
+  try{
+    const data = await API.adminOrders();
+    const pending = (data.orders||[]).filter(o=>o.status==='pending');
+    mount.innerHTML = pending.length ? pending.map(o => `
+      <div class="order-card" id="admin-order-${o.id}">
+        <div class="row-between"><div><div class="mono muted" style="font-size:11px;">#${o.id}</div>
+          <div style="font-weight:600; font-size:13px; margin-top:3px;">Item #${o.item_id}</div></div>
+          <span class="status-chip chip-pending">Pending</span></div>
+        <div class="muted" style="font-size:11px; margin-top:6px;">buyer: ${o.buyer_chat_id}</div>
+        ${o.payment_photo_url ? `<img src="${o.payment_photo_url}" class="zoomable" onclick="openLightboxAdmin('${o.payment_photo_url}')" style="width:100%; border-radius:8px; margin-top:8px; max-height:160px; object-fit:cover; cursor:zoom-in;">` : ''}
+        <div class="btn-row">
+          <button class="mini-btn" style="flex:1; background:var(--mint); color:#062617;" onclick="decideOrder(${o.id},'appr')">✅ អនុម័ត</button>
+          <button class="mini-btn" style="flex:1; background:var(--crimson); color:#fff;" onclick="decideOrder(${o.id},'rej')">❌ បដិសេធ</button>
+        </div>
+      </div>`).join('') : `<div class="order-card">គ្មាន Order កំពុងរង់ចាំ 🎉</div>`;
+  }catch(e){
+    mount.innerHTML = `<div class="order-card">Error loading — open via /panel</div>`;
+  }
+}
+function openLightboxAdmin(src){ window.open(src, '_blank'); }
+async function decideOrder(id, action){
+  const res = await API.adminOrderDecision(id, action);
+  if(res.error) return alert(res.error);
+  if(tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+  document.getElementById('admin-order-' + id).remove();
+}
+
+/* ---- products: conditional Account/Item form ---- */
+function toggleAddForm(){ document.getElementById('add-form').classList.toggle('hidden'); }
+function onKindChange(){
+  const isAccount = document.getElementById('new-kind').value === 'account';
+  document.getElementById('qty-field').classList.toggle('hidden', isAccount);
+  document.getElementById('account-fields').classList.toggle('hidden', !isAccount);
+  document.getElementById('item-photo-field').classList.toggle('hidden', isAccount);
+  document.getElementById('category-field').classList.toggle('hidden', isAccount);
+  if(isAccount) document.getElementById('new-category').value = 'Account';
+}
+onKindChange();
+
+async function addProduct(){
+  const isAccount = document.getElementById('new-kind').value === 'account';
+  const form = new FormData();
+  form.append('category', isAccount ? 'Account' : document.getElementById('new-category').value);
+  form.append('name', document.getElementById('new-name').value);
+  form.append('price', document.getElementById('new-price').value);
+  if(isAccount){
+    form.append('quantity', 1); // Account is always single — never asks stock
+    form.append('warranty_days', document.getElementById('new-warranty').value);
+    form.append('description', document.getElementById('new-desc').value);
+    form.append('login_name', document.getElementById('new-login').value);
+    form.append('login_password', document.getElementById('new-password').value);
+    const totp = document.getElementById('new-totp').value.trim();
+    if(totp) form.append('totp_secret', totp);
+    const photo = document.getElementById('new-photo').files[0];
+    if(photo) form.append('photo', photo);
+    const video = document.getElementById('new-video').files[0]; // ⚠️NEW field, needs backend support
+    if(video) form.append('video', video);
+  }else{
+    form.append('quantity', document.getElementById('new-qty').value);
+    const photo = document.getElementById('new-photo-item').files[0];
+    if(photo) form.append('photo', photo);
+  }
+  const res = await API.adminCreateItem(form);
+  if(res.error) return alert('Error: ' + res.error);
+  toggleAddForm();
+  loadProducts();
+}
+async function loadProducts(){
+  const mount = document.getElementById('admin-products');
+  mount.innerHTML = `<div class="order-card">…</div>`;
+  try{
+    const data = await API.adminItems();
+    mount.innerHTML = (data.items||[]).map(p => `
+      <div class="order-card">
+        <div class="row-between">
+          <div><div style="font-weight:600; font-size:13px;">${p.name}</div><div class="muted mono" style="font-size:11px; margin-top:3px;">${p.category} · #${p.id}${!p.published ? ' · 📝Draft' : ''}</div></div>
+          <div style="text-align:right;"><div class="mono" style="font-weight:700;">$${p.price}</div><div class="muted mono" style="font-size:11px;">${p.category==='Account' ? '' : p.quantity + ' left'}</div></div>
+        </div>
+      </div>`).join('');
+  }catch(e){ mount.innerHTML = `<div class="order-card">Error — open via /panel</div>`; }
+}
+
+/* ---- coupons: real GET via ⚠️NEW /api/admin/coupons, disable via ⚠️NEW route ---- */
+async function loadCoupons(){
+  const tbody = document.getElementById('coupons-table');
+  try{
+    const data = await API.adminCoupons();
+    tbody.innerHTML = (data.coupons||[]).map(c => `
+      <tr><td class="mono">${c.code}</td><td>${c.discount_type==='percent'?c.amount+'%':'$'+c.amount}</td>
+        <td class="mono">${c.used_count}/${c.max_uses}</td>
+        <td><button class="mini-btn" onclick="closeCoupon('${c.code}')">${c.active ? 'បិទ' : '🔴'}</button></td></tr>`).join('');
+  }catch(e){
+    tbody.innerHTML = `<tr><td colspan="4" class="muted">Needs /api/admin/coupons route — see backend patch notes</td></tr>`;
+  }
+}
+async function closeCoupon(code){
+  const res = await API.adminDisableCoupon(code);
+  if(res.error) return alert(res.error);
+  loadCoupons();
+}
+
+document.addEventListener('DOMContentLoaded', () => switchTab('dash'));
+</script>
 </body>
 </html>
