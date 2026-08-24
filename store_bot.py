@@ -68,11 +68,11 @@ async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def howtobuy_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = (
         '<tg-emoji emoji-id="5462921117423384478">🛒</tg-emoji> <b>របៀបទិញ:</b>\n\n'
-        '1️⃣ ចុច "បើក Uchiro Store" ខាងក្រោម\n'
-        '2️⃣ ជ្រើសរើសប្រភេទ (Account / MM2 / Fruit / ...)\n'
-        '3️⃣ ចុចលើទំនិញ → ចុច "ទិញឥឡូវ"\n'
-        '4️⃣ Scan KHQR ដើម្បីទូទាត់ → Upload Screenshot\n'
-        '5️⃣ រង់ចាំ Admin បញ្ជាក់ (ជាធម្មតាលឿនណាស់) — នៅពេលបញ្ជាក់រួច គណនី/ទំនិញនឹងផ្ញើមកអោយភ្លាមតាម Bot នេះ\n\n'
+        '<tg-emoji emoji-id="5373145953043767837">1️⃣</tg-emoji> ចុច "បើក Uchiro Store" ខាងក្រោម\n'
+        '<tg-emoji emoji-id="5373072212481830225">2️⃣</tg-emoji> ជ្រើសរើសប្រភេទ (Account / MM2 / Fruit / ...)\n'
+        '<tg-emoji emoji-id="5373199859345985068">3️⃣</tg-emoji> ចុចលើទំនិញ → ចុច "ទិញឥឡូវ"\n'
+        '<tg-emoji emoji-id="5373059438468953535">4️⃣</tg-emoji> Scan KHQR ដើម្បីទូទាត់ → Upload Screenshot\n'
+        '<tg-emoji emoji-id="5373024823196809594">5️⃣</tg-emoji> រង់ចាំ Admin បញ្ជាក់ (ជាធម្មតាលឿនណាស់) — នៅពេលបញ្ជាក់រួច គណនី/ទំនិញនឹងផ្ញើមកអោយភ្លាមតាម Bot នេះ\n\n'
         '<tg-emoji emoji-id="5298877105000439431">🏷️</tg-emoji> មាន Coupon? វាយក្នុងទំព័រទូទាត់ មុនពេល Scan QR។'
     )
     await update.message.reply_text(text, parse_mode="HTML", reply_markup=_open_app_keyboard())
@@ -81,11 +81,11 @@ async def howtobuy_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def howtologin_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = (
         '<tg-emoji emoji-id="6106980145250177382">🔐</tg-emoji> <b>របៀបចូលគណនី (Account ដែលមាន Authenticator):</b>\n\n'
-        '1️⃣ ទាញយក App ឈ្មោះ <b>Google Authenticator</b> ឬ <b>Authy</b> ពី App Store / Play Store\n'
-        '2️⃣ បើក /myorders → ចុច Order → ចុច "មើលគណនីរបស់ខ្ញុំ"\n'
-        '3️⃣ Copy Name និង Password → ចូល Roblox ដោយប្រើវា\n'
-        '4️⃣ Roblox នឹងសួរលេខកូដ 6 ខ្ទង់ → ត្រឡប់មក App វិញ → Copy លេខកូដ Live → បិទភ្ជាប់\n'
-        '5️⃣ លេខកូដប្រែរាល់ 30 វិនាទី — ចុច "Refresh" បើលេខចាស់ហួសពេល\n\n'
+        '<tg-emoji emoji-id="5373145953043767837">1️⃣</tg-emoji> ទាញយក App ឈ្មោះ <b>Google Authenticator</b> ឬ <b>Authy</b> ពី App Store / Play Store\n'
+        '<tg-emoji emoji-id="5373072212481830225">2️⃣</tg-emoji> បើក /myorders → ចុច Order → ចុច "មើលគណនីរបស់ខ្ញុំ"\n'
+        '<tg-emoji emoji-id="5373199859345985068">3️⃣</tg-emoji> Copy Name និង Password → ចូល Roblox ដោយប្រើវា\n'
+        '<tg-emoji emoji-id="5373059438468953535">4️⃣</tg-emoji> Roblox នឹងសួរលេខកូដ 6 ខ្ទង់ → ត្រឡប់មក App វិញ → Copy លេខកូដ Live → បិទភ្ជាប់\n'
+        '<tg-emoji emoji-id="5373024823196809594">5️⃣</tg-emoji> លេខកូដប្រែរាល់ 30 វិនាទី — ចុច "Refresh" បើលេខចាស់ហួសពេល\n\n'
         '<tg-emoji emoji-id="6265015769008969527">⚠️</tg-emoji> កុំលុប Authenticator ចោល — បើលុប Warranty នឹងធ្លាក់ពី 14ថ្ងៃ មក 7ថ្ងៃ។'
     )
     await update.message.reply_text(text, parse_mode="HTML", reply_markup=_open_app_keyboard())
