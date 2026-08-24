@@ -8,7 +8,7 @@ admin approval (bot or panel) — either path works end to end.
 
 import os
 import time
-
+from premium_emoji import entities_for
 from flask import Flask, request, jsonify, render_template, send_from_directory
 
 import database as db
@@ -38,6 +38,11 @@ MUSIC_URL = f"{WEBAPP_URL}/media/music.mp3" if WEBAPP_URL and os.path.exists(os.
 @app.route("/assets/<path:filename>")
 def assets(filename):
     return send_from_directory(os.path.join("webapp", "assets"), filename)
+    ASSETS_DIR = os.path.join(os.getcwd(), "webapp", "assets")
+
+@app.route("/assets/<path:filename>")
+def assets(filename):
+    return send_from_directory(ASSETS_DIR, filename)
 
 
 @app.route("/media/<path:filename>")
