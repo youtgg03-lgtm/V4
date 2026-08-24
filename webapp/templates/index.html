@@ -10,7 +10,7 @@
 <style>body{font-family:'Noto Sans Khmer','Inter',-apple-system,sans-serif;}</style>
 </head>
 <body>
-  <!-- ដាក់កូដនេះមុន </body> ក្នុងឯកសារ index.html របស់អ្នក -->
+<!-- ដាក់កូដនេះមុន </body> ក្នុងឯកសារ index.html របស់អ្នក -->
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
 
@@ -123,7 +123,6 @@ async function loadPremiumEmojis() {
 
 document.addEventListener('DOMContentLoaded', loadPremiumEmojis);
 </script>
-
 <div id="app">
 
   <div class="topbar">
@@ -147,7 +146,6 @@ document.addEventListener('DOMContentLoaded', loadPremiumEmojis);
       </div>
     </div>
 
-    <div class="collection-grid" id="collection-grid"></div>
     <div class="chip-row" id="chip-row"></div>
     <div class="pgrid" id="product-grid"></div>
   </div>
@@ -169,12 +167,9 @@ document.addEventListener('DOMContentLoaded', loadPremiumEmojis);
       <div class="row-between"><span class="pill"><span class="status-dot status-expired"></span>0</span><span class="muted" style="font-size:11px;">បើលុប Email + Code ទាំងអស់</span></div>
     </div>
 
-    <div class="order-card" onclick="openGuideSheet()" style="cursor:pointer;">
-      <div class="row-between">
-        <div style="font-weight:700;" data-i18n="how_to_login_full">How to install & log in</div>
-        <span class="muted">›</span>
-      </div>
-      <p class="muted" style="font-size:12.5px; line-height:1.6; margin-top:8px;">📲 ចុចទីនេះ — ជំហានទាំង 5 ពីទាញយក App រហូតដល់ចូលគណនីជោគជ័យ។</p>
+    <div class="order-card">
+      <div style="font-weight:700; margin-bottom:8px;" data-i18n="how_to_login_full">How to install & log in</div>
+      <p class="muted" style="font-size:12.5px; line-height:1.6;">🎬 វីដេអូណែនាំនឹងមកដល់ឆាប់ៗនេះ — ចុច "ការបញ្ជាទិញរបស់ខ្ញុំ" ដើម្បីមើលលេខកូដផ្ទាល់សម្រាប់គណនីរបស់អ្នក។</p>
     </div>
 
     <div class="order-card">
@@ -254,7 +249,17 @@ document.addEventListener('DOMContentLoaded', loadPremiumEmojis);
   <div id="checkout-success" class="hidden">
     <div class="eyebrow" style="justify-content:flex-start;" data-i18n="delivered">Delivered</div>
     <h2 style="margin:10px 0 4px; font-size:16px;" id="checkout-item-name-2"></h2>
-    <div class="mt-16" id="delivery-blocks"></div>
+    <div class="field mt-16">
+      <label data-i18n="delivery_details">Delivery details</label>
+      <div class="code-box" style="align-items:flex-start;">
+        <span class="mono" id="delivery-text" style="font-size:12.5px; white-space:pre-wrap; line-height:1.6;"></span>
+        <button class="copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('delivery-text').textContent)">Copy</button>
+      </div>
+    </div>
+    <div id="delivery-has-totp" class="field hidden">
+      <label data-i18n="live_code">Live code</label>
+      <div class="code-box" id="delivery-code-box"><span class="code">000 000</span><button class="copy-btn refresh-btn" data-i18n="refresh">Refresh</button></div>
+    </div>
     <div class="btn-row">
       <button onclick="backToHome()" class="btn-secondary" data-i18n="back_home">Back to home</button>
       <button onclick="goToMyOrders()" class="btn-primary" data-i18n="view_orders">My orders</button>
@@ -262,69 +267,6 @@ document.addEventListener('DOMContentLoaded', loadPremiumEmojis);
   </div>
 </div>
 
-<!-- ===================== HOW-TO-LOGIN GUIDE SHEET ===================== -->
-<div class="sheet" id="guide-sheet">
-  <div class="sheet-handle"></div>
-  <div class="eyebrow" style="justify-content:flex-start;">📲 <span data-i18n="how_to_login_full">How to install & log in</span></div>
-
-  <div class="guide-step">
-    <div class="guide-num">1</div>
-    <div>
-      <div class="guide-title">មានវិធីពីរ ជ្រើសយកមួយ</div>
-      <div class="guide-desc">
-        <strong>⚡ លឿនបំផុត:</strong> គ្រាន់តែ Copy លេខកូដ 6 ខ្ទង់ដែល Refresh ស្រាប់ក្នុង App នេះ — មិនចាំបាច់ដំឡើងអ្វីទេ។<br>
-        <strong>🔑 អចិន្ត្រៃយ៍:</strong> ថតចម្លង "Setup Key" ដាក់ក្នុង App Authenticator ផ្ទាល់ខ្លួន ដើម្បីទទួលបានលេខកូដដោយខ្លួនឯង គ្រប់ពេល។
-      </div>
-    </div>
-  </div>
-  <div class="guide-step">
-    <div class="guide-num">2</div>
-    <div>
-      <div class="guide-title">(ស្រេចចិត្ត) ទាញយក App Authenticator</div>
-      <div class="guide-desc">ទាញយក <strong>Google Authenticator</strong> ឬ <strong>Authy</strong> ពី App Store (iPhone) ឬ Play Store (Android) — ឥតគិតថ្លៃ។ ចាំបាច់តែពេលចង់ប្រើវិធី "អចិន្ត្រៃយ៍" ខាងលើ។</div>
-    </div>
-  </div>
-  <div class="guide-step">
-    <div class="guide-num">3</div>
-    <div>
-      <div class="guide-title">ចូល "ការបញ្ជាទិញរបស់ខ្ញុំ"</div>
-      <div class="guide-desc">ចុចផ្ទាំង 🧾 Orders ខាងក្រោម → ចុច Order ដែល "ប្រគល់ជូនរួច ✅" → ចុច "🔓 មើលគណនីរបស់ខ្ញុំ"។</div>
-    </div>
-  </div>
-  <div class="guide-step">
-    <div class="guide-num">4</div>
-    <div>
-      <div class="guide-title">Copy Name & Password</div>
-      <div class="guide-desc">ចុចប៊ូតុង Copy ក្បែរ Name និង Password → បើក Roblox App → ចូល (Login) ដោយប្រើវា។</div>
-    </div>
-  </div>
-  <div class="guide-step">
-    <div class="guide-num">5</div>
-    <div>
-      <div class="guide-title">Roblox សុំលេខកូដ 6 ខ្ទង់</div>
-      <div class="guide-desc">ត្រឡប់មកទំព័រ "មើលគណនីរបស់ខ្ញុំ" វិញ → ចុច Copy ក្បែរលេខកូដ Live (ឬបើក App Authenticator ផ្ទាល់ខ្លួន បើអ្នកបានដំឡើង Setup Key) → ត្រឡប់ទៅ Roblox → បិទភ្ជាប់លេខកូដនោះ។</div>
-    </div>
-  </div>
-  <div class="guide-step">
-    <div class="guide-num">6</div>
-    <div>
-      <div class="guide-title">លេខកូដផុតកំណត់ភ្លាមៗ</div>
-      <div class="guide-desc">លេខកូដប្រែរាល់ 30 វិនាទី — បើវាមិនដំណើរការទេ សូមចុច "Refresh" យកលេខថ្មី រួចព្យាយាមម្តងទៀត។</div>
-    </div>
-  </div>
-
-  <div class="toast-banner" style="margin-top:6px;">
-    <span>⚠️</span>
-    <div><strong>កុំលុប</strong> Authenticator ចោល — Warranty នឹងធ្លាក់ពី 14 ថ្ងៃ មក 7 ថ្ងៃ។ បើលុប Email + Code ទាំងអស់ គ្មាន Warranty ទៀតទេ។</div>
-  </div>
-
-  <button onclick="closeSheet()" class="btn-primary mt-16">យល់ហើយ 👍</button>
-</div>
-
-<script>
-  window.ADMIN_USERNAME = "{{ admin_username }}";
-  window.CHANNEL_USERNAME = "{{ channel_username }}";
-</script>
 <script src="{{ url_for('assets', filename='data.js') }}"></script>
 <script src="{{ url_for('assets', filename='app.js') }}"></script>
 </body>
