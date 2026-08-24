@@ -120,7 +120,7 @@ async def howtobuy_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def howtologin_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     html_text = (
-        '<tg-emoji emoji-id="6106980145250177382">🔐</tg-emoji> <b>របៀបចូលគណនី (Account ដែលមាន Authenticator):</b>\n\n'
+        '<tg-emoji emoji-id="5197288647275071607">🔐</tg-emoji> <b>របៀបចូលគណនី (Account ដែលមាន Authenticator):</b>\n\n'
         '<tg-emoji emoji-id="5373145953043767837">1️⃣</tg-emoji> ទាញយក App ឈ្មោះ <b>Google Authenticator</b> ឬ <b>Authy</b> ពី App Store / Play Store\n'
         '<tg-emoji emoji-id="5373072212481830225">2️⃣</tg-emoji> បើក /myorders → ចុច Order → ចុច "មើលគណនីរបស់ខ្ញុំ"\n'
         '<tg-emoji emoji-id="5373199859345985068">3️⃣</tg-emoji> Copy Name និង Password → ចូល Roblox ដោយប្រើវា\n'
