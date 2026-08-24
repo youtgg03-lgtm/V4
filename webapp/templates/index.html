@@ -7,11 +7,7 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+Khmer:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{{ url_for('assets', filename='style.css') }}">
-<style>
-  body { font-family: 'Noto Sans Khmer', 'Inter', -apple-system, sans-serif; }
-  .sheet { z-index: 1000; }
-  .sheet-backdrop { z-index: 999; }
-</style>
+<style>body{font-family:'Noto Sans Khmer','Inter',-apple-system,sans-serif;}</style>
 </head>
 <body>
   <!-- ដាក់កូដនេះមុន </body> ក្នុងឯកសារ index.html របស់អ្នក -->
@@ -189,8 +185,8 @@ document.addEventListener('DOMContentLoaded', loadPremiumEmojis);
     <div class="order-card">
       <div style="font-weight:700; margin-bottom:10px;" data-i18n="contact_admin">Contact admin</div>
       <div class="btn-row">
-        <a href="https://t.me/{{ admin_username }}" target="_blank" class="btn-primary" style="display:flex; align-items:center; justify-content:center; text-decoration:none;">👤 Admin</a>
-        <a href="https://t.me/{{ channel_username }}" target="_blank" class="btn-secondary" style="display:flex; align-items:center; justify-content:center; text-decoration:none;">📢 Channel</a>
+        <a href="https://t.me/{{ admin_username }}" target="_blank" class="btn-primary" style="display:flex; align-items:center; justify-content:center;">👤 Admin</a>
+        <a href="https://t.me/{{ channel_username }}" target="_blank" class="btn-secondary" style="display:flex; align-items:center; justify-content:center;">📢 Channel</a>
       </div>
     </div>
   </div>
@@ -208,18 +204,16 @@ document.addEventListener('DOMContentLoaded', loadPremiumEmojis);
   <img id="lightbox-img" src="">
 </div>
 
-<!-- ===================== SHEETS & BACKDROP ===================== -->
+<!-- ===================== PRODUCT SHEET ===================== -->
 <div class="sheet-backdrop" id="backdrop" onclick="closeSheet()"></div>
-
-<!-- PRODUCT SHEET -->
 <div class="sheet" id="product-sheet">
-  <div class="sheet-handle" onclick="closeSheet()"></div>
+  <div class="sheet-handle"></div>
   <div id="product-sheet-body"></div>
 </div>
 
-<!-- CHECKOUT SHEET -->
+<!-- ===================== CHECKOUT SHEET ===================== -->
 <div class="sheet" id="checkout-sheet">
-  <div class="sheet-handle" onclick="closeSheet()"></div>
+  <div class="sheet-handle"></div>
 
   <div id="checkout-pending">
     <div class="eyebrow" style="justify-content:flex-start;" data-i18n="checkout">Checkout</div>
@@ -254,7 +248,7 @@ document.addEventListener('DOMContentLoaded', loadPremiumEmojis);
 
   <div id="checkout-rejected" class="hidden">
     <div class="eyebrow" style="justify-content:flex-start; color:var(--crimson);">❌ <span data-i18n="rejected">Rejected</span></div>
-    <a href="https://t.me/{{ admin_username }}" target="_blank" class="btn-secondary" style="display:block; text-align:center; margin-top:12px; text-decoration:none;">👤 Contact admin</a>
+    <a href="https://t.me/{{ admin_username }}" target="_blank" class="btn-secondary" style="display:block; text-align:center; margin-top:12px;">👤 Contact admin</a>
   </div>
 
   <div id="checkout-success" class="hidden">
@@ -268,9 +262,9 @@ document.addEventListener('DOMContentLoaded', loadPremiumEmojis);
   </div>
 </div>
 
-<!-- HOW-TO-LOGIN GUIDE SHEET -->
+<!-- ===================== HOW-TO-LOGIN GUIDE SHEET ===================== -->
 <div class="sheet" id="guide-sheet">
-  <div class="sheet-handle" onclick="closeSheet()"></div>
+  <div class="sheet-handle"></div>
   <div class="eyebrow" style="justify-content:flex-start;">📲 <span data-i18n="how_to_login_full">How to install & log in</span></div>
 
   <div class="guide-step">
