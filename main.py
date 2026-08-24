@@ -1,6 +1,6 @@
 """
 main.py — Uchiro Store
-Runs the Store Bot, Admin Bot, and Flask web server together.
+Runs the Store Bot, Admin Bot, and the Flask web server together.
 """
 
 import asyncio
@@ -39,13 +39,11 @@ async def run_bots():
         while True:
             await asyncio.sleep(3600)
 
-    # Initialize all applications first
     for name, application in apps:
         await application.initialize()
         await application.start()
-        # drop_pending_updates=True clears any stuck queue from previous crashes
         await application.updater.start_polling(drop_pending_updates=True)
-        log.info(f"{name} polling started successfully")
+        log.info(f"{name} polling started")
 
     try:
         await asyncio.Event().wait()
