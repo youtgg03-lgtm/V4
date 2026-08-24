@@ -21,7 +21,6 @@ def _open_app_keyboard():
 
 
 async def _safe_reply(update: Update, html_text: str, fallback_text: str, reply_markup=None):
-    """Sends HTML with custom emojis; falls back to standard text if Telegram rejects custom emoji IDs."""
     try:
         await update.message.reply_text(html_text, parse_mode="HTML", reply_markup=reply_markup)
     except Exception as err:
@@ -35,13 +34,13 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     html_text = (
         f'<tg-emoji emoji-id="5413694143601842851">👋</tg-emoji> សូមស្វាគមន៍មកកាន់ <b>{STORE_NAME}</b>!\n\n'
-        '<tg-emoji emoji-id="5294018354527353443">🛍️</tg-emoji> Blox Fruits Account · MM2 · Blade Ball · Gamepass — ទូទាត់ KHQR ប្រគល់ជូនស្វ័យប្រវត្តិ។\n\n'
+        '<tg-emoji emoji-id="5836672976862319297">🛍️</tg-emoji> Blox Fruits Account · MM2 · Blade Ball · Gamepass — ទូទាត់ KHQR ប្រគល់ជូនស្វ័យប្រវត្តិ។\n\n'
         'ចុចប៊ូតុងខាងក្រោមដើម្បីមើលទំនិញ ទិញ និងមើល Order History ទាំងអស់នៅកន្លែងតែមួយ <tg-emoji emoji-id="5470177992950946662">👇</tg-emoji>\n\n'
         '<tg-emoji emoji-id="5987635334945444280">📋</tg-emoji> <b>ឬវាយ Command ទាំងនេះផ្ទាល់:</b>\n'
-        '/shop — <tg-emoji emoji-id="5294018354527353443">🛍️</tg-emoji> មើលទំនិញ\n'
-        '/myorders — <tg-emoji emoji-id="5987635334945444280">🧾</tg-emoji> មើល Order History\n'
-        '/howtobuy — <tg-emoji emoji-id="5462921117423384478">🛒</tg-emoji> របៀបទិញ\n'
-        '/howtologin — <tg-emoji emoji-id="6106980145250177382">🔐</tg-emoji> របៀបចូលគណនី\n'
+        '/shop — <tg-emoji emoji-id="5836672976862319297">🛍️</tg-emoji> មើលទំនិញ\n'
+        '/myorders — <tg-emoji emoji-id="5264959791213586839">🧾</tg-emoji> មើល Order History\n'
+        '/howtobuy — <tg-emoji emoji-id="5312361253610475399">🛒</tg-emoji> របៀបទិញ\n'
+        '/howtologin — <tg-emoji emoji-id="6109136102868652214">🔐</tg-emoji> របៀបចូលគណនី\n'
         '/help — <tg-emoji emoji-id="6106980145250177382">💬</tg-emoji> ជំនួយ + ទាក់ទង Admin'
     )
     fallback_text = (
@@ -61,11 +60,11 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def myorders_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     orders = db.get_orders_by_buyer(update.effective_user.id)
     if not orders:
-        html_empty = '<tg-emoji emoji-id="6289745241511565742">📭</tg-emoji> អ្នកមិនទាន់មាន Order ទេ។ បើក Store ដើម្បីចាប់ផ្តើមទិញ <tg-emoji emoji-id="5470177992950946662">👇</tg-emoji>'
+        html_empty = '<tg-emoji emoji-id="5352896944496728039">📭</tg-emoji> អ្នកមិនទាន់មាន Order ទេ។ បើក Store ដើម្បីចាប់ផ្តើមទិញ <tg-emoji emoji-id="5470177992950946662">👇</tg-emoji>'
         fallback_empty = "📭 អ្នកមិនទាន់មាន Order ទេ។ បើក Store ដើម្បីចាប់ផ្តើមទិញ 👇"
         return await _safe_reply(update, html_empty, fallback_empty, _open_app_keyboard())
 
-    html_text = f'<tg-emoji emoji-id="5987635334945444280">🧾</tg-emoji> អ្នកមាន {len(orders)} Order — មើលលម្អិត (login/password/live code) ក្នុង App <tg-emoji emoji-id="5470177992950946662">👇</tg-emoji>'
+    html_text = f'<tg-emoji emoji-id="5264959791213586839">🧾</tg-emoji> អ្នកមាន {len(orders)} Order — មើលលម្អិត (login/password/live code) ក្នុង App <tg-emoji emoji-id="5470177992950946662">👇</tg-emoji>'
     fallback_text = f"🧾 អ្នកមាន {len(orders)} Order — មើលលម្អិត (login/password/live code) ក្នុង App 👇"
     await _safe_reply(update, html_text, fallback_text, _open_app_keyboard())
 
@@ -73,14 +72,14 @@ async def myorders_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     html_text = (
         f'<tg-emoji emoji-id="6106980145250177382">💬</tg-emoji> <b>ជំនួយ:</b>\n'
-        f'<tg-emoji emoji-id="6001526766714227911">👤</tg-emoji> Admin: @{ADMIN_USERNAME}\n'
+        f'<tg-emoji emoji-id="5258011929993026890">👤</tg-emoji> Admin: @{ADMIN_USERNAME}\n'
         f'<tg-emoji emoji-id="6300742299114541958">📢</tg-emoji> Channel: @{CHANNEL_USERNAME}\n\n'
         '<tg-emoji emoji-id="5987635334945444280">📋</tg-emoji> <b>Command ទាំងអស់:</b>\n'
-        '/shop — <tg-emoji emoji-id="5294018354527353443">🛍️</tg-emoji> មើលទំនិញ\n'
-        '/myorders — <tg-emoji emoji-id="5987635334945444280">🧾</tg-emoji> Order History\n'
-        '/howtobuy — <tg-emoji emoji-id="5462921117423384478">🛒</tg-emoji> របៀបទិញ\n'
-        '/howtologin — <tg-emoji emoji-id="6106980145250177382">🔐</tg-emoji> របៀបចូលគណនី\n\n'
-        'Warranty និង FAQ ពេញលេញមាននៅក្នុងផ្ទាំង Help របស់ App。'
+        '/shop — <tg-emoji emoji-id="5836672976862319297">🛍️</tg-emoji> មើលទំនិញ\n'
+        '/myorders — <tg-emoji emoji-id="5264959791213586839">🧾</tg-emoji> Order History\n'
+        '/howtobuy — <tg-emoji emoji-id="5312361253610475399">🛒</tg-emoji> របៀបទិញ\n'
+        '/howtologin — <tg-emoji emoji-id="6109136102868652214">🔐</tg-emoji> របៀបចូលគណនី\n\n'
+        'Warranty និង FAQ ពេញលេញមាននៅក្នុងផ្ទាំង Help របស់ App។'
     )
     fallback_text = (
         f"💬 ជំនួយ:\n"
@@ -98,12 +97,12 @@ async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def howtobuy_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     html_text = (
-        '<tg-emoji emoji-id="5462921117423384478">🛒</tg-emoji> <b>របៀបទិញ:</b>\n\n'
-        '<tg-emoji emoji-id="5373145953043767837">1️⃣</tg-emoji> ចុច "បើក Uchiro Store" ខាងក្រោម\n'
-        '<tg-emoji emoji-id="5373072212481830225">2️⃣</tg-emoji> ជ្រើសរើសប្រភេទ (Account / MM2 / Fruit / ...)\n'
-        '<tg-emoji emoji-id="5373199859345985068">3️⃣</tg-emoji> ចុចលើទំនិញ → ចុច "ទិញឥឡូវ"\n'
-        '<tg-emoji emoji-id="5373059438468953535">4️⃣</tg-emoji> Scan KHQR ដើម្បីទូទាត់ → Upload Screenshot\n'
-        '<tg-emoji emoji-id="5373024823196809594">5️⃣</tg-emoji> រង់ចាំ Admin បញ្ជាក់ (ជាធម្មតាលឿនណាស់) — នៅពេលបញ្ជាក់រួច គណនី/ទំនិញនឹងផ្ញើមកអោយភ្លាមតាម Bot នេះ\n\n'
+        '<tg-emoji emoji-id="5312361253610475399">🛒</tg-emoji> <b>របៀបទិញ:</b>\n\n'
+        '<tg-emoji emoji-id="5382322671679708881">1️⃣</tg-emoji> ចុច "បើក Uchiro Store" ខាងក្រោម\n'
+        '<tg-emoji emoji-id="5381990043642502553">2️⃣</tg-emoji> ជ្រើសរើសប្រភេទ (Account / MM2 / Fruit / ...)\n'
+        '<tg-emoji emoji-id="5381879959345985068">3️⃣</tg-emoji> ចុចលើទំនិញ → ចុច "ទិញឥឡូវ"\n'
+        '<tg-emoji emoji-id="5382054253403577563">4️⃣</tg-emoji> Scan KHQR ដើម្បីទូទាត់ → Upload Screenshot\n'
+        '<tg-emoji emoji-id="5391197405553107640">5️⃣</tg-emoji> រង់ចាំ Admin បញ្ជាក់ (ជាធម្មតាលឿនណាស់) — នៅពេលបញ្ជាក់រួច គណនី/ទំនិញនឹងផ្ញើមកអោយភ្លាមតាម Bot នេះ\n\n'
         '<tg-emoji emoji-id="5298877105000439431">🏷️</tg-emoji> មាន Coupon? វាយក្នុងទំព័រទូទាត់ មុនពេល Scan QR។'
     )
     fallback_text = (
@@ -120,12 +119,12 @@ async def howtobuy_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def howtologin_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     html_text = (
-        '<tg-emoji emoji-id="5197288647275071607">🔐</tg-emoji> <b>របៀបចូលគណនី (Account ដែលមាន Authenticator):</b>\n\n'
-        '<tg-emoji emoji-id="5373145953043767837">1️⃣</tg-emoji> ទាញយក App ឈ្មោះ <b>Google Authenticator</b> ឬ <b>Authy</b> ពី App Store / Play Store\n'
-        '<tg-emoji emoji-id="5373072212481830225">2️⃣</tg-emoji> បើក /myorders → ចុច Order → ចុច "មើលគណនីរបស់ខ្ញុំ"\n'
-        '<tg-emoji emoji-id="5373199859345985068">3️⃣</tg-emoji> Copy Name និង Password → ចូល Roblox ដោយប្រើវា\n'
-        '<tg-emoji emoji-id="5373059438468953535">4️⃣</tg-emoji> Roblox នឹងសួរលេខកូដ 6 ខ្ទង់ → ត្រឡប់មក App វិញ → Copy លេខកូដ Live → បិទភ្ជាប់\n'
-        '<tg-emoji emoji-id="5373024823196809594">5️⃣</tg-emoji> លេខកូដប្រែរាល់ 30 វិនាទី — ចុច "Refresh" បើលេខចាស់ហួសពេល\n\n'
+        '<tg-emoji emoji-id="6109136102868652214">🔐</tg-emoji> <b>របៀបចូលគណនី (Account ដែលមាន Authenticator):</b>\n\n'
+        '<tg-emoji emoji-id="5382322671679708881">1️⃣</tg-emoji> ទាញយក App ឈ្មោះ <b>Google Authenticator</b> ឬ <b>Authy</b> ពី App Store / Play Store\n'
+        '<tg-emoji emoji-id="5381990043642502553">2️⃣</tg-emoji> បើក /myorders → ចុច Order → ចុច "មើលគណនីរបស់ខ្ញុំ"\n'
+        '<tg-emoji emoji-id="5381879959345985068">3️⃣</tg-emoji> Copy Name និង Password → ចូល Roblox ដោយប្រើវា\n'
+        '<tg-emoji emoji-id="5382054253403577563">4️⃣</tg-emoji> Roblox នឹងសួរលេខកូដ 6 ខ្ទង់ → ត្រឡប់មក App វិញ → Copy លេខកូដ Live → បិទភ្ជាប់\n'
+        '<tg-emoji emoji-id="5391197405553107640">5️⃣</tg-emoji> លេខកូដប្រែរាល់ 30 វិនាទី — ចុច "Refresh" បើលេខចាស់ហួសពេល\n\n'
         '<tg-emoji emoji-id="6265015769008969527">⚠️</tg-emoji> កុំលុប Authenticator ចោល — បើលុប Warranty នឹងធ្លាក់ពី 14ថ្ងៃ មក 7ថ្ងៃ។'
     )
     fallback_text = (
