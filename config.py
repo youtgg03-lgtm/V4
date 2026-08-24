@@ -23,11 +23,11 @@ OWNER_IDS = set(
 
 # ---------- Store identity ----------
 STORE_NAME = os.getenv("STORE_NAME", "Uchiro Store 🏴‍☠️")
-STORE_NAME_KM = os.getenv("STORE_NAME_KM", "ហាង Uchiro")
+STORE_NAME_KM = os.getenv("STORE_NAME_KM", " Uchiro Store")
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "noreakyout")       # without the @
 CHANNEL_USERNAME = os.getenv("CHANNEL_USERNAME", "uchirostore")  # without the @
-STORE_BOT_USERNAME = os.getenv("STORE_BOT_USERNAME", "UchiroStoreBot")
-ADMIN_BOT_USERNAME = os.getenv("ADMIN_BOT_USERNAME", "UchiroAdminBot")
+STORE_BOT_USERNAME = os.getenv("STORE_BOT_USERNAME", "Uchirostore_V1_bot")
+ADMIN_BOT_USERNAME = os.getenv("ADMIN_BOT_USERNAME", "UchiroStore_adminV1_bot")
 
 # ---------- Categories ----------
 # "Account" is treated specially everywhere (single-stock, warranty,
