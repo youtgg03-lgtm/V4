@@ -69,6 +69,17 @@ const CATEGORY_EMOJI = {
 };
 function categoryEmoji(cat) { return CATEGORY_EMOJI[cat] || "📦"; }
 
+const CATEGORIES = [
+  { id: "all", name_km: "ទាំងអស់", name_en: "All", emoji: "📁" },
+  { id: "Account", name_km: "Account", name_en: "Account", emoji: "👑" },
+  { id: "Fruit", name_km: "Fruit", name_en: "Fruit", emoji: "🍈" },
+  { id: "Gamepass", name_km: "Gamepass", name_en: "Gamepass", emoji: "🎫" },
+  { id: "Evade", name_km: "Evade", name_en: "Evade", emoji: "🏃" },
+  { id: "Robux", name_km: "Robux", name_en: "Robux", emoji: "💎" },
+  { id: "Blade Ball", name_km: "Blade Ball", name_en: "Blade Ball", emoji: "⚔️" },
+  { id: "MM2", name_km: "MM2", name_en: "MM2", emoji: "🔪" }
+];
+
 /* ============================================================
    KH / EN Dictionary & Translation Engine
    ============================================================ */
@@ -193,7 +204,6 @@ async function loadPremiumEmojis(targetNode = document.body) {
           el.className = 'lottie-emoji premium-emoji-rendered';
           el.dataset.src = `assets/emojis/${filename}`;
         } else {
-          // webp / png / jpg
           el = document.createElement('img');
           el.src = `assets/emojis/${filename}`;
           el.alt = match[0];
