@@ -116,11 +116,42 @@ button, input, select, textarea{font-family:inherit; color:inherit;}
 .zoomable::after{content:"🔍"; position:absolute; bottom:8px; right:8px; font-size:12px; background:rgba(0,0,0,.5); border-radius:6px; padding:3px 5px;}
 
 /* ---------- bottom sheet (product detail / checkout) ---------- */
-.sheet-backdrop{position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:40; opacity:0; pointer-events:none; transition:opacity .2s;}
-.sheet-backdrop.open{opacity:1; pointer-events:auto;}
-.sheet{position:fixed; left:0; right:0; bottom:0; z-index:41; background:var(--surface); border-radius:20px 20px 0 0; border-top:1px solid var(--line);
-  max-height:88vh; overflow-y:auto; transform:translateY(100%); transition:transform .25s ease; padding:18px 18px calc(24px + var(--safe-bottom));}
-.sheet.open{transform:translateY(0);}
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  z-index: 40;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.sheet-backdrop.open,
+.sheet-backdrop.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 41;
+  background: var(--surface);
+  border-radius: 20px 20px 0 0;
+  border-top: 1px solid var(--line);
+  max-height: 88vh;
+  overflow-y: auto;
+  transform: translateY(100%);
+  transition: transform 0.25s ease;
+  padding: 18px 18px calc(24px + var(--safe-bottom));
+}
+
+.sheet.open,
+.sheet.active {
+  transform: translateY(0) !important;
+}
 .sheet-handle{width:36px; height:4px; background:var(--slate-dim); border-radius:99px; margin:0 auto 16px;}
 .sheet-media{aspect-ratio:16/9; border-radius:12px; background:linear-gradient(150deg, var(--surface-2), var(--surface-3)); margin-bottom:14px; display:flex; align-items:center; justify-content:center; font-family:var(--font-display); color:var(--slate-dim); font-size:13px; overflow:hidden;}
 .sheet-media img{width:100%; height:100%; object-fit:cover;}
