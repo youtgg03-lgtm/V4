@@ -30,7 +30,7 @@ const API = {
   myOrders: () => fetch(`/api/my-orders?init_data=${encodeURIComponent(getInitData())}`).then(r => r.json()),
   rules: () => fetch('/api/rules').then(r => r.json()),
 
-  // ---- Admin Endpoints ----
+  // Admin
   adminVerify: () => fetch('/api/admin/verify', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -56,75 +56,75 @@ const API = {
 };
 
 /* ============================================================
-   Complete Telegram Premium Emoji Map (Synchronous / Instant)
+   Real Exact Telegram Premium Emoji Map (Matching Files)
    ============================================================ */
 const EMOJI_FILE_MAP = {
-  "📁": "5854908544712707500.json",
-  "📦": "5854908544712707500.json",
-  "🔄": "5346269127059196142.json",
-  "🏴‍☠️": "5386372293263892965.json",
-  "🧾": "5264959791213586839.json",
+  "📁": "5854908544712707500.webm",
+  "📦": "5854908544712707500.webm",
+  "👑": "5310070232155436036.webp",
+  "🍈": "6084765169940961891.webp",
+  "🎫": "6301052490242597458.webp",
+  "🏃": "5210965493887819972.webp",
+  "💎": "5202189539967267386.webp",
+  "⚔️": "5408935401442267103.json",
+  "🔪": "5242288969550422350.webp",
+  "🧾": "5264959791213586839.webm",
+  "🛍️": "5836672976862319297.json",
+  "🛍": "5373052667671093676.json",
+  "🌐": "6107376940098786484.json",
+  "📢": "6300742299114541958.webm",
   "👤": "5258011929993026890.json",
   "🎵": "5172447776205702031.json",
-  "🌐": "6107376940098786484.json",
-  "📢": "6300742299114541958.json",
-  "📞": "5390947107744008389.json",
-  "📜": "6323096332579899122.json",
-  "🏠": "5416041192905265756.json",
-  "🍈": "6084765169940961891.json",
-  "🛍": "5373052667671093676.json",
-  "🛍️": "5836672976862319297.json",
-  "🎮": "5319247469165433798.json",
-  "🏃": "5210965493887819972.json",
-  "💎": "5202189539967267386.json",
-  "⚔️": "5408935401442267103.json",
-  "🔪": "5242288969550422350.json",
-  "⚠️": "6265015769008969527.json",
-  "🛡️": "5251203410396458957.json",
-  "✨": "6140944776691717029.json",
-  "🔍": "5368460200875418560.json",
-  "🔒": "5296369303661067030.json",
-  "⏳": "6289745241511565742.json",
-  "✅": "5904704361182798355.json",
-  "❌": "6300696192640620174.json",
-  "🎉": "6107318416874410520.json",
-  "📋": "5987635334945444280.json",
-  "🛒": "5312361253610475399.json",
-  "🇰🇭": "5294018354527353443.json",
-  "📖": "5294018354527353443.json",
-  "1️⃣": "5382322671679708881.json",
-  "2️⃣": "5381990043642502553.json",
-  "3️⃣": "5381879959335738545.json",
-  "4️⃣": "5382054253403577563.json",
-  "5️⃣": "5391197405553107640.json",
-  "🎁": "6283073379184415506.json",
-  "📺": "5355012477883004708.json",
-  "🔐": "6109136102868652214.json",
-  "🚫": "5240241223632954241.json",
-  "👋": "5413694143601842851.json",
-  "📊": "5231200819986047254.json",
-  "📈": "6300854578149593766.json",
-  "🏷️": "5298877105000439431.json",
-  "🔴": "6170475670443922913.json",
   "💬": "6106980145250177382.json",
-  "👇": "5470177992950946662.json",
-  "🛠️": "5462921117423384478.json",
-  "👥": "6001526766714227911.json",
-  "🟢": "6138568461481153914.json",
-  "❓": "6298557526560479072.json",
+  "📊": "5231200819986047254.json",
+  "🚫": "5240241223632954241.json",
+  "🛡️": "5251203410396458957.json",
+  "🔒": "5296369303661067030.json",
+  "🏷️": "5298877105000439431.json",
+  "🛒": "5312361253610475399.json",
+  "🎮": "5319247469165433798.json",
+  "🔄": "5346269127059196142.json",
   "📭": "5352896944496728039.json",
-  "🆕": "6147506120920405501.json",
-  "💵": "6301016442582081020.json",
-  "📲": "5406809207947142040.json",
-  "⚡": "6107022708376082350.json",
-  "🔑": "5420094143089111506.json",
-  "🔓": "6291893425239234198.json",
-  "👍": "5469770542288478598.json",
+  "📺": "5355012477883004708.json",
+  "🔍": "5368460200875418560.webp",
+  "3️⃣": "5381879959335738545.json",
+  "2️⃣": "5381990043642502553.json",
+  "4️⃣": "5382054253403577563.json",
+  "1️⃣": "5382322671679708881.json",
+  "🏴‍☠️": "5386372293263892965.json",
   "🔈": "5388632425314140043.json",
-  "🚀": "6300989332748506061.json",
+  "📞": "5390947107744008389.json",
+  "5️⃣": "5391197405553107640.json",
+  "📲": "5406809207947142040.json",
+  "👋": "5413694143601842851.json",
+  "🏠": "5416041192905265756.json",
+  "🔑": "5420094143089111506.webm",
+  "🛠️": "5462921117423384478.json",
+  "👍": "5469770542288478598.json",
+  "👇": "5470177992950946662.json",
   "📝": "5837003105228558796.json",
-  "👑": "5310070232155436036.json",
-  "🎫": "6301052490242597458.json"
+  "✅": "5904704361182798355.json",
+  "📋": "5987635334945444280.json",
+  "👥": "6001526766714227911.webp",
+  "⚡": "6107022708376082350.json",
+  "🎉": "6107318416874410520.json",
+  "🔐": "6109136102868652214.json",
+  "🟢": "6138568461481153914.webm",
+  "✨": "6140944776691717029.webm",
+  "🆕": "6147506120920405501.json",
+  "🔴": "6170475670443922913.webm",
+  "⚠️": "6265015769008969527.webm",
+  "🎁": "6283073379184415506.json",
+  "⏳": "6289745241511565742.json",
+  "🔓": "6291893425239234198.json",
+  "❓": "6298557526560479072.json",
+  "❌": "6300696192640620174.json",
+  "📈": "6300854578149593766.json",
+  "🚀": "6300989332748506061.json",
+  "💵": "6301016442582081020.json",
+  "📜": "6323096332579899122.json",
+  "🇰🇭": "5294018354527353443.webm",
+  "📖": "5294018354527353443.webm"
 };
 
 const CATEGORIES = [
@@ -149,9 +149,6 @@ const CATEGORY_EMOJI = {
 };
 function categoryEmoji(cat) { return CATEGORY_EMOJI[cat] || "📦"; }
 
-/* ============================================================
-   KH / EN Dictionary & Translation Engine
-   ============================================================ */
 const I18N = {
   en: {
     tab_shop: "Shop", tab_orders: "Orders", tab_help: "Help",
@@ -213,19 +210,22 @@ function toggleLang() {
 }
 
 /* ============================================================
-   Direct Emoji Inserter + Lottie Auto-Initializer
+   Direct Emoji Inserter (Synchronous & Immediate)
    ============================================================ */
 function emojiHtml(emojiChar) {
   const filename = EMOJI_FILE_MAP[emojiChar];
   if (!filename) return emojiChar;
 
   const ext = filename.split('.').pop().toLowerCase();
+  const path = `assets/emojis/${filename}`;
+
   if (ext === 'webm') {
-    return `<video src="assets/emojis/${filename}" autoplay loop muted playsinline class="premium-emoji premium-emoji-rendered"></video>`;
+    return `<video src="${path}" autoplay loop muted playsinline class="premium-emoji" onerror="this.outerHTML='${emojiChar}'"></video>`;
   } else if (ext === 'json') {
-    return `<span class="lottie-emoji premium-emoji-rendered" data-src="assets/emojis/${filename}"></span>`;
+    return `<span class="lottie-emoji" data-src="${path}" data-fallback="${emojiChar}"></span>`;
   } else {
-    return `<img src="assets/emojis/${filename}" alt="${emojiChar}" class="premium-emoji premium-emoji-rendered">`;
+    // webp / png
+    return `<img src="${path}" alt="${emojiChar}" class="premium-emoji" onerror="this.outerHTML='${emojiChar}'">`;
   }
 }
 
@@ -233,13 +233,19 @@ function initLottieAnimations(container = document.body) {
   if (!window.lottie) return;
   container.querySelectorAll('.lottie-emoji:not([data-rendered])').forEach(el => {
     el.setAttribute('data-rendered', 'true');
-    lottie.loadAnimation({
+    const path = el.dataset.src;
+    const fallback = el.dataset.fallback || '';
+
+    const anim = lottie.loadAnimation({
       container: el,
-      path: el.dataset.src,
+      path: path,
       renderer: 'svg',
       loop: true,
       autoplay: true
     });
+
+    anim.addEventListener('data_failed', () => { el.textContent = fallback; });
+    anim.addEventListener('error', () => { el.textContent = fallback; });
   });
 }
 
@@ -262,7 +268,7 @@ function loadPremiumEmojis(targetNode = document.body) {
         if (['SCRIPT', 'STYLE', 'TG-EMOJI', 'TEXTAREA', 'INPUT', 'VIDEO'].includes(parent.nodeName)) {
           return NodeFilter.FILTER_REJECT;
         }
-        if (parent.closest('.premium-emoji-rendered') || parent.closest('.lottie-emoji')) {
+        if (parent.closest('.premium-emoji') || parent.closest('.lottie-emoji')) {
           return NodeFilter.FILTER_REJECT;
         }
         return NodeFilter.FILTER_ACCEPT;
@@ -377,7 +383,6 @@ function renderProducts() {
 function selectCategory(catId) {
   selectedCategory = catId;
 
-  // Toggle active class directly to keep animated elements loaded without re-rendering
   document.querySelectorAll('.collection-tile').forEach(el => {
     el.classList.toggle('active', el.dataset.cat === catId);
   });
@@ -404,11 +409,9 @@ function switchTab(tab) {
   }
 }
 
-// Initial Immediate Render (Synchronous — No Flash)
+// Initial Synchronous Render
 renderCategories();
-loadPremiumEmojis(document.body);
 
-// Async data fetch for stock quantities
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     const res = await API.items();
