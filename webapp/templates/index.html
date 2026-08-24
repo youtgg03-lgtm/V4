@@ -14,6 +14,119 @@
 </style>
 </head>
 <body>
+  <!-- ដាក់កូដនេះមុន </body> ក្នុងឯកសារ index.html របស់អ្នក -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
+
+<style>
+.premium-emoji {
+  width: 1.2em;
+  height: 1.2em;
+  display: inline-block;
+  vertical-align: -0.2em;
+  object-fit: contain;
+}
+.lottie-emoji {
+  width: 1.2em;
+  height: 1.2em;
+  display: inline-block;
+  vertical-align: -0.2em;
+}
+</style>
+
+<script>
+async function loadPremiumEmojis() {
+  const res = await fetch('assets/emoji-files.json');
+  const emojiMap = await res.json();
+
+  const emojiChars = Object.keys(emojiMap).sort((a, b) => b.length - a.length);
+  if (emojiChars.length === 0) return;
+
+  const pattern = new RegExp(
+    emojiChars.map(e => e.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'),
+    'g'
+  );
+
+  // ស្កេនរកតែ text nodes ប៉ុណ្ណោះ (មិនប៉ះពាល់ <script>/<style>)
+  const walker = document.createTreeWalker(
+    document.body,
+    NodeFilter.SHOW_TEXT,
+    {
+      acceptNode: (node) => {
+        const parentTag = node.parentNode.nodeName;
+        if (parentTag === 'SCRIPT' || parentTag === 'STYLE') return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    }
+  );
+
+  const textNodes = [];
+  while (walker.nextNode()) textNodes.push(walker.currentNode);
+
+  textNodes.forEach(node => {
+    const text = node.nodeValue;
+    pattern.lastIndex = 0;
+    if (!pattern.test(text)) return;
+    pattern.lastIndex = 0;
+
+    const frag = document.createDocumentFragment();
+    let lastIndex = 0;
+    let match;
+
+    while ((match = pattern.exec(text)) !== null) {
+      const before = text.slice(lastIndex, match.index);
+      if (before) frag.appendChild(document.createTextNode(before));
+
+      const filename = emojiMap[match[0]];
+      const ext = filename.split('.').pop();
+      let el;
+
+      if (ext === 'webm') {
+        el = document.createElement('video');
+        el.src = `assets/emojis/${filename}`;
+        el.autoplay = true;
+        el.loop = true;
+        el.muted = true;
+        el.playsInline = true;
+        el.className = 'premium-emoji';
+      } else if (ext === 'json') {
+        el = document.createElement('span');
+        el.className = 'lottie-emoji';
+        el.dataset.src = `assets/emojis/${filename}`;
+      } else {
+        // webp / png / jpg
+        el = document.createElement('img');
+        el.src = `assets/emojis/${filename}`;
+        el.alt = match[0];
+        el.className = 'premium-emoji';
+      }
+
+      frag.appendChild(el);
+      lastIndex = pattern.lastIndex;
+    }
+
+    const after = text.slice(lastIndex);
+    if (after) frag.appendChild(document.createTextNode(after));
+
+    node.parentNode.replaceChild(frag, node);
+  });
+
+  // ចាប់ផ្តើម animation សម្រាប់ Lottie (.json) emojis
+  if (window.lottie) {
+    document.querySelectorAll('.lottie-emoji').forEach(el => {
+      lottie.loadAnimation({
+        container: el,
+        path: el.dataset.src,
+        renderer: 'svg',
+        loop: true,
+        autoplay: true
+      });
+    });
+  }
+}
+
+document.addEventListener('DOMContentLoaded', loadPremiumEmojis);
+</script>
 
 <div id="app">
 
