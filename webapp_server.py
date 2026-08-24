@@ -38,11 +38,9 @@ MUSIC_URL = f"{WEBAPP_URL}/media/music.mp3" if WEBAPP_URL and os.path.exists(os.
 @app.route("/assets/<path:filename>")
 def assets(filename):
     return send_from_directory(os.path.join("webapp", "assets"), filename)
-    ASSETS_DIR = os.path.join(os.getcwd(), "webapp", "assets")
-
 @app.route("/assets/<path:filename>")
-def assets(filename):
-    return send_from_directory(ASSETS_DIR, filename)
+def serve_assets(filename):
+    return send_from_directory("assets", filename)
 
 
 @app.route("/media/<path:filename>")
