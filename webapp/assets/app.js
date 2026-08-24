@@ -160,6 +160,7 @@ function renderItems() {
   `).join("");
 }
 
+/* ---------------- MODALS & HELPERS ---------------- */
 function openProduct(id) {
   triggerHaptic("light");
   const item = ALL_ITEMS.find(i => i.id === id);
@@ -178,8 +179,8 @@ function openProduct(id) {
 
   const backdrop = document.getElementById("backdrop");
   const sheet = document.getElementById("product-sheet");
-  if (backdrop) backdrop.classList.add("active");
-  if (sheet) sheet.classList.add("active");
+  if (backdrop) backdrop.classList.add("open", "active");
+  if (sheet) sheet.classList.add("open", "active");
 }
 
 /* ---------------- CHECKOUT LOGIC ---------------- */
@@ -205,8 +206,10 @@ async function openCheckout(itemId) {
   document.getElementById("checkout-rejected").classList.add("hidden");
   document.getElementById("checkout-success").classList.add("hidden");
 
-  document.getElementById("backdrop").classList.add("active");
-  document.getElementById("checkout-sheet").classList.add("active");
+  const backdrop = document.getElementById("backdrop");
+  const sheet = document.getElementById("checkout-sheet");
+  if (backdrop) backdrop.classList.add("open", "active");
+  if (sheet) sheet.classList.add("open", "active");
 
   const quote = await API.quote({ item_id: itemId, init_data: getInitData() });
   const qrBox = document.getElementById("checkout-qr");
@@ -345,19 +348,21 @@ async function loadOrders() {
   }
 }
 
-/* ---------------- MODALS & HELPERS ---------------- */
+
 function closeSheet() {
   const backdrop = document.getElementById("backdrop");
-  if (backdrop) backdrop.classList.remove("active");
-  document.querySelectorAll(".sheet").forEach(s => s.classList.remove("active"));
+  if (backdrop) {
+    backdrop.classList.remove("open", "active");
+  }
+  document.querySelectorAll(".sheet").forEach(s => s.classList.remove("open", "active"));
 }
 
 function openGuideSheet() {
   triggerHaptic("light");
   const backdrop = document.getElementById("backdrop");
   const sheet = document.getElementById("guide-sheet");
-  if (backdrop) backdrop.classList.add("active");
-  if (sheet) sheet.classList.add("active");
+  if (backdrop) backdrop.classList.add("open", "active");
+  if (sheet) sheet.classList.add("open", "active");
 }
 
 function backToHome() {
