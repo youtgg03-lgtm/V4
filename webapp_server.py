@@ -8,7 +8,7 @@ admin approval (bot or panel) — either path works end to end.
 
 import os
 import time
-from premium_emoji import entities_for
+
 from flask import Flask, request, jsonify, render_template, send_from_directory
 
 import database as db
@@ -38,9 +38,6 @@ MUSIC_URL = f"{WEBAPP_URL}/media/music.mp3" if WEBAPP_URL and os.path.exists(os.
 @app.route("/assets/<path:filename>")
 def assets(filename):
     return send_from_directory(os.path.join("webapp", "assets"), filename)
-@app.route("/assets/<path:filename>")
-def serve_assets(filename):
-    return send_from_directory("assets", filename)
 
 
 @app.route("/media/<path:filename>")
@@ -76,20 +73,14 @@ def admin_page():
 # Auth helper
 # ============================================================
 def _auth_store_user(init_data):
-    if not init_data:
-        return {"id": 0, "username": "preview"}
-    user = utils.verify_webapp_init_data(init_data, STORE_BOT_TOKEN)
-    return user if user else {"id": 0, "username": "preview"}
+    return utils.verify_webapp_init_data(init_data, STORE_BOT_TOKEN)
 
 
 def _auth_admin(init_data):
-    if not init_data:
-        # Fallback to allow viewing panel if opened directly in browser without initData
-        return {"id": 0, "username": "admin"}
     user = utils.verify_webapp_init_data(init_data, ADMIN_BOT_TOKEN)
-    if user and db.is_admin_id(user.get("id")):
-        return user
-    return {"id": 0, "username": "admin"}
+    if not user or not db.is_admin_id(user["id"]):
+        return None
+    return user
 
 
 def _item_public_dict(item):
@@ -184,7 +175,7 @@ def api_order_submit():
         if result["valid"]:
             final_price = result["discounted_price"]
         else:
-            coupon_code = ""
+            coupon_code = ""  # silently drop an invalid code rather than failing the whole order
 
     photo = request.files.get("photo")
     photo_path = utils.save_uploaded_file(photo, subdir="payments") if photo else ""
@@ -198,6 +189,8 @@ def api_order_submit():
         payment_photo_path=photo_path, warranty_days=item["warranty_days"], source="webapp",
     )
 
+    # notify admins WITH inline Approve/Reject buttons — falls back gracefully
+    # if KHQR auto-confirms this order before anyone taps a button
     services.notify_admins_new_order(_owner_ids_safe(), order_id, item, final_price)
 
     return jsonify({"order_id": order_id})
@@ -212,14 +205,18 @@ def _owner_ids_safe():
 def api_order_status(order_id):
     user = _auth_store_user(request.args.get("init_data", ""))
     order = db.get_order(order_id)
-    if not order:
+    if not order or not user or order["buyer_chat_id"] != user["id"]:
         return jsonify({"error": "not found"}), 404
 
+    # After 24h with no admin decision, tell the buyer plainly this isn't confirmed
+    # yet — without silently rejecting it, so an admin can still approve it late
+    # if the payment genuinely did come through.
     is_stale = (
         order["status"] == "pending"
         and (time.time() - order["created_at"]) > ORDER_PENDING_TIMEOUT_HOURS * 3600
     )
 
+    # auto-check KHQR payment if this order used one
     if order["status"] == "pending" and order["khqr_md5"]:
         if utils.check_khqr_paid(order["khqr_md5"]):
             services.approve_order(order_id)
@@ -233,7 +230,7 @@ def api_order_status(order_id):
         "is_stale": is_stale,
         "item_name": item["name"] if item else "",
         "delivery_info": utils.build_delivery_message(item) if order["status"] == "approved" and item else "",
-        "fields": fields,
+        "fields": fields,  # {login_name, login_password, totp_secret, delivery_note, has_totp}
         "has_totp": utils.has_totp(item) if item else False,
         "warranty_expires_at": (
             time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(order["warranty_expires_at"]))
@@ -244,8 +241,9 @@ def api_order_status(order_id):
 
 @app.route("/api/order/<int:order_id>/refresh-code")
 def api_order_refresh_code(order_id):
+    user = _auth_store_user(request.args.get("init_data", ""))
     order = db.get_order(order_id)
-    if not order or order["status"] != "approved":
+    if not order or not user or order["buyer_chat_id"] != user["id"] or order["status"] != "approved":
         return jsonify({"error": "not found"}), 404
     item = db.get_item(order["item_id"])
     if not item or not item["totp_secret"]:
@@ -256,7 +254,9 @@ def api_order_refresh_code(order_id):
 @app.route("/api/my-orders")
 def api_my_orders():
     user = _auth_store_user(request.args.get("init_data", ""))
-    orders = db.get_orders_by_buyer(user["id"]) if user.get("id") else db.list_orders()
+    if not user:
+        return jsonify({"error": "unauthorized"}), 403
+    orders = db.get_orders_by_buyer(user["id"])
     out = []
     for o in orders:
         item = db.get_item(o["item_id"])
@@ -282,7 +282,15 @@ def api_admin_verify():
 @app.route("/api/admin/items", methods=["GET", "POST"])
 def api_admin_items():
     if request.method == "GET":
+        user = _auth_admin(request.args.get("init_data", ""))
+        if not user:
+            return jsonify({"error": "unauthorized"}), 403
         return jsonify({"items": db.list_all_items()})
+
+    # POST — create item (multipart form: covers both Account and Item flows)
+    user = _auth_admin(request.form.get("init_data", ""))
+    if not user:
+        return jsonify({"error": "unauthorized"}), 403
 
     category = request.form.get("category", "")
     name = request.form.get("name", "")
@@ -301,30 +309,44 @@ def api_admin_items():
         warranty_days=int(request.form.get("warranty_days", 14)) if is_account else 0,
         login_name=request.form.get("login_name", ""),
         login_password=request.form.get("login_password", ""),
-        delivery_info=request.form.get("delivery_info", ""),
+        delivery_info=request.form.get("delivery_info", ""),  # generic note, mainly for trade items
         totp_secret=request.form.get("totp_secret", ""),
         photo_path=photo_path, video_path=video_path,
-        published=0,
+        published=0,  # always starts as a draft — release via /release or the panel
     )
     return jsonify({"item_id": item_id})
 
 
 @app.route("/api/admin/items/<int:item_id>", methods=["PATCH", "DELETE"])
 def api_admin_item_detail(item_id):
+    init_data = request.form.get("init_data") or (request.get_json(silent=True) or {}).get("init_data", "")
+    user = _auth_admin(init_data)
+    if not user:
+        return jsonify({"error": "unauthorized"}), 403
+
     if request.method == "DELETE":
         db.delete_item(item_id)
         return jsonify({"ok": True})
-    return jsonify({"error": "not implemented"}), 501
+
+    # PATCH — not fully implemented; add fields as needed via database.py
+    return jsonify({"error": "not implemented — extend database.py with an update_item() function"}), 501
 
 
 @app.route("/api/admin/items/release-all", methods=["POST"])
 def api_admin_release_all():
+    body = request.get_json(force=True) or {}
+    user = _auth_admin(body.get("init_data", ""))
+    if not user:
+        return jsonify({"error": "unauthorized"}), 403
     count = db.release_all_drafts()
     return jsonify({"released": count})
 
 
 @app.route("/api/admin/orders")
 def api_admin_orders():
+    user = _auth_admin(request.args.get("init_data", ""))
+    if not user:
+        return jsonify({"error": "unauthorized"}), 403
     orders = db.list_orders()
     out = []
     for o in orders:
@@ -336,6 +358,10 @@ def api_admin_orders():
 def api_admin_order_decision(order_id, action):
     if action not in ("appr", "rej"):
         return jsonify({"error": "invalid action"}), 400
+    body = request.get_json(force=True) or {}
+    user = _auth_admin(body.get("init_data", ""))
+    if not user:
+        return jsonify({"error": "unauthorized"}), 403
 
     order = db.get_order(order_id)
     if not order or order["status"] != "pending":
@@ -350,12 +376,18 @@ def api_admin_order_decision(order_id, action):
 
 @app.route("/api/admin/coupons")
 def api_admin_coupons():
+    user = _auth_admin(request.args.get("init_data", ""))
+    if not user:
+        return jsonify({"error": "unauthorized"}), 403
     return jsonify({"coupons": db.list_coupons()})
 
 
 @app.route("/api/admin/coupons/disable", methods=["POST"])
 def api_admin_disable_coupon():
     body = request.get_json(force=True) or {}
+    user = _auth_admin(body.get("init_data", ""))
+    if not user:
+        return jsonify({"error": "unauthorized"}), 403
     code = body.get("code", "")
     if not code:
         return jsonify({"error": "code required"}), 400
