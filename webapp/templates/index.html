@@ -32,92 +32,101 @@
 
 <script>
 async function loadPremiumEmojis() {
-  const res = await fetch('assets/emoji-files.json');
-  const emojiMap = await res.json();
+  try {
+    const res = await fetch('assets/emoji-files.json');
+    if (!res.ok) return;
+    const emojiMap = await res.json();
 
-  const emojiChars = Object.keys(emojiMap).sort((a, b) => b.length - a.length);
-  if (emojiChars.length === 0) return;
+    const emojiChars = Object.keys(emojiMap).sort((a, b) => b.length - a.length);
+    if (emojiChars.length === 0) return;
 
-  const pattern = new RegExp(
-    emojiChars.map(e => e.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'),
-    'g'
-  );
+    const pattern = new RegExp(
+      emojiChars.map(e => e.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'),
+      'g'
+    );
 
-  // ស្កេនរកតែ text nodes ប៉ុណ្ណោះ (មិនប៉ះពាល់ <script>/<style>)
-  const walker = document.createTreeWalker(
-    document.body,
-    NodeFilter.SHOW_TEXT,
-    {
-      acceptNode: (node) => {
-        const parentTag = node.parentNode.nodeName;
-        if (parentTag === 'SCRIPT' || parentTag === 'STYLE') return NodeFilter.FILTER_REJECT;
-        return NodeFilter.FILTER_ACCEPT;
+    // ស្កេនរកតែ text nodes ប៉ុណ្ណោះ (មិនប៉ះពាល់ <script>/<style>)
+    const walker = document.createTreeWalker(
+      document.body,
+      NodeFilter.SHOW_TEXT,
+      {
+        acceptNode: (node) => {
+          const parentTag = node.parentNode ? node.parentNode.nodeName : '';
+          if (parentTag === 'SCRIPT' || parentTag === 'STYLE' || parentTag === 'TEXTAREA' || parentTag === 'INPUT') return NodeFilter.FILTER_REJECT;
+          if (node.parentNode && node.parentNode.classList && node.parentNode.classList.contains('premium-emoji-rendered')) return NodeFilter.FILTER_REJECT;
+          return NodeFilter.FILTER_ACCEPT;
+        }
       }
-    }
-  );
+    );
 
-  const textNodes = [];
-  while (walker.nextNode()) textNodes.push(walker.currentNode);
+    const textNodes = [];
+    while (walker.nextNode()) textNodes.push(walker.currentNode);
 
-  textNodes.forEach(node => {
-    const text = node.nodeValue;
-    pattern.lastIndex = 0;
-    if (!pattern.test(text)) return;
-    pattern.lastIndex = 0;
+    textNodes.forEach(node => {
+      const text = node.nodeValue;
+      pattern.lastIndex = 0;
+      if (!pattern.test(text)) return;
+      pattern.lastIndex = 0;
 
-    const frag = document.createDocumentFragment();
-    let lastIndex = 0;
-    let match;
+      const frag = document.createDocumentFragment();
+      let lastIndex = 0;
+      let match;
 
-    while ((match = pattern.exec(text)) !== null) {
-      const before = text.slice(lastIndex, match.index);
-      if (before) frag.appendChild(document.createTextNode(before));
+      while ((match = pattern.exec(text)) !== null) {
+        const before = text.slice(lastIndex, match.index);
+        if (before) frag.appendChild(document.createTextNode(before));
 
-      const filename = emojiMap[match[0]];
-      const ext = filename.split('.').pop();
-      let el;
+        const filename = emojiMap[match[0]];
+        const ext = filename.split('.').pop().toLowerCase();
+        let el;
 
-      if (ext === 'webm') {
-        el = document.createElement('video');
-        el.src = `assets/emojis/${filename}`;
-        el.autoplay = true;
-        el.loop = true;
-        el.muted = true;
-        el.playsInline = true;
-        el.className = 'premium-emoji';
-      } else if (ext === 'json') {
-        el = document.createElement('span');
-        el.className = 'lottie-emoji';
-        el.dataset.src = `assets/emojis/${filename}`;
-      } else {
-        // webp / png / jpg
-        el = document.createElement('img');
-        el.src = `assets/emojis/${filename}`;
-        el.alt = match[0];
-        el.className = 'premium-emoji';
+        if (ext === 'webm') {
+          el = document.createElement('video');
+          el.src = `assets/emojis/${filename}`;
+          el.autoplay = true;
+          el.loop = true;
+          el.muted = true;
+          el.playsInline = true;
+          el.className = 'premium-emoji premium-emoji-rendered';
+        } else if (ext === 'json') {
+          el = document.createElement('span');
+          el.className = 'lottie-emoji premium-emoji-rendered';
+          el.dataset.src = `assets/emojis/${filename}`;
+        } else {
+          // webp / png / jpg
+          el = document.createElement('img');
+          el.src = `assets/emojis/${filename}`;
+          el.alt = match[0];
+          el.className = 'premium-emoji premium-emoji-rendered';
+        }
+
+        frag.appendChild(el);
+        lastIndex = pattern.lastIndex;
       }
 
-      frag.appendChild(el);
-      lastIndex = pattern.lastIndex;
-    }
+      const after = text.slice(lastIndex);
+      if (after) frag.appendChild(document.createTextNode(after));
 
-    const after = text.slice(lastIndex);
-    if (after) frag.appendChild(document.createTextNode(after));
-
-    node.parentNode.replaceChild(frag, node);
-  });
-
-  // ចាប់ផ្តើម animation សម្រាប់ Lottie (.json) emojis
-  if (window.lottie) {
-    document.querySelectorAll('.lottie-emoji').forEach(el => {
-      lottie.loadAnimation({
-        container: el,
-        path: el.dataset.src,
-        renderer: 'svg',
-        loop: true,
-        autoplay: true
-      });
+      if (node.parentNode) {
+        node.parentNode.replaceChild(frag, node);
+      }
     });
+
+    // ចាប់ផ្តើម animation សម្រាប់ Lottie (.json) emojis
+    if (window.lottie) {
+      document.querySelectorAll('.lottie-emoji:not([data-rendered])').forEach(el => {
+        el.setAttribute('data-rendered', 'true');
+        lottie.loadAnimation({
+          container: el,
+          path: el.dataset.src,
+          renderer: 'svg',
+          loop: true,
+          autoplay: true
+        });
+      });
+    }
+  } catch (err) {
+    console.warn('Emoji render skipped:', err);
   }
 }
 
