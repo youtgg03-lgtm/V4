@@ -151,6 +151,9 @@ async function loadPremiumEmojis(targetNode = document.body) {
           if (['SCRIPT', 'STYLE', 'TEXTAREA', 'INPUT'].includes(parentTag)) {
             return NodeFilter.FILTER_REJECT;
           }
+          if (node.parentNode && node.parentNode.classList && node.parentNode.classList.contains('premium-emoji-rendered')) {
+            return NodeFilter.FILTER_REJECT;
+          }
           return NodeFilter.FILTER_ACCEPT;
         }
       }
@@ -184,16 +187,17 @@ async function loadPremiumEmojis(targetNode = document.body) {
           el.loop = true;
           el.muted = true;
           el.playsInline = true;
-          el.className = 'premium-emoji';
+          el.className = 'premium-emoji premium-emoji-rendered';
         } else if (ext === 'json') {
           el = document.createElement('span');
-          el.className = 'lottie-emoji';
+          el.className = 'lottie-emoji premium-emoji-rendered';
           el.dataset.src = `assets/emojis/${filename}`;
         } else {
+          // webp / png / jpg
           el = document.createElement('img');
           el.src = `assets/emojis/${filename}`;
           el.alt = match[0];
-          el.className = 'premium-emoji';
+          el.className = 'premium-emoji premium-emoji-rendered';
         }
 
         frag.appendChild(el);
