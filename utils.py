@@ -5,6 +5,7 @@ Shared helpers used by both webapp_server.py and the two bots.
 
 import hashlib
 import hmac
+import html
 import json
 import time
 import uuid
@@ -12,6 +13,7 @@ from urllib.parse import parse_qsl
 
 import pyotp
 
+from emoji_map import p
 from config import (
     BAKONG_ACCOUNT_ID, MERCHANT_NAME, MERCHANT_CITY, BAKONG_API_TOKEN,
     MEDIA_DIR, WARRANTY_DAYS_NO_AUTH,
@@ -66,33 +68,38 @@ def generate_totp_code(secret: str) -> str:
 # if the item actually has one — no confusing extra steps otherwise.
 # ============================================================
 def build_delivery_message(item: dict) -> str:
-    """Plain-text version, used for the Telegram bot chat message."""
+    """HTML-formatted, used for the Telegram bot chat message. Every
+    dynamic value (name, password, secret) is html.escape()'d before
+    being embedded — a stored password containing < > or & would
+    otherwise break Telegram's HTML parser and silently fail to send.
+    Only the static labels/emoji we write ourselves are left as real tags."""
     lines = []
     if item["category"] == "Account":
         if item.get("login_name") or item.get("login_password"):
             if item.get("login_name"):
-                lines.append(f"👤 Name: {item['login_name']}")
+                lines.append(f"👤 Name: <code>{html.escape(item['login_name'])}</code>")
             if item.get("login_password"):
-                lines.append(f"🔑 Password: {item['login_password']}")
+                lines.append(f"🔑 Password: <code>{html.escape(item['login_password'])}</code>")
         elif item.get("delivery_info"):  # legacy fallback for older rows
-            lines.append(item["delivery_info"])
+            lines.append(html.escape(item["delivery_info"]))
         if item.get("totp_secret"):
-            secret = item["totp_secret"].replace(" ", "").upper()
-            lines.append(f"\n🔐 Authenticator Setup Key (វាយបញ្ចូល App ដោយខ្លួនឯង):\n{secret}")
+            secret = html.escape(item["totp_secret"].replace(" ", "").upper())
+            code = html.escape(generate_totp_code(item["totp_secret"]))
+            lines.append(f"\n🔐 Authenticator Setup Key (វាយបញ្ចូល App ដោយខ្លួនឯង):\n<code>{secret}</code>")
             lines.append(
                 "\n👉 បើកលឿន? Copy លេខកូដ 6 ខ្ទង់ដែលកំពុង Live ក្នុង App ដោយផ្ទាល់ "
                 "(មិនចាំបាច់ដំឡើង Authenticator ខ្លួនឯងទេ)\n"
-                f"🔐 លេខកូដឥឡូវនេះ: {generate_totp_code(item['totp_secret'])}"
+                f"🔐 លេខកូដឥឡូវនេះ: <code>{code}</code>"
             )
             lines.append("(ចូល Telegram → ការបញ្ជាទិញរបស់ខ្ញុំ → Refresh ដើម្បីទទួលបានលេខកូដថ្មីរាល់ 30 វិនាទី)")
         warranty = item.get("warranty_days") or WARRANTY_DAYS_NO_AUTH
         lines.append(f"\n🛡️ Warranty: {warranty} ថ្ងៃ គិតពីពេលទទួល")
     else:
         if item.get("delivery_info"):
-            lines.append(item["delivery_info"])
+            lines.append(html.escape(item["delivery_info"]))
         else:
             lines.append("ទំនិញនេះនឹងប្រគល់ជូនផ្ទាល់ក្នុងហ្គេម — Admin នឹងទាក់ទងអ្នកឆាប់ៗនេះ។")
-    return "\n".join(lines)
+    return p("\n".join(lines))
 
 
 def get_delivery_fields(item: dict) -> dict:
