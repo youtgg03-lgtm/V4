@@ -22,7 +22,6 @@ td{padding:9px 4px; border-bottom:1px solid var(--line); vertical-align:middle;}
 </style>
 </head>
 <body>
-  <!-- ដាក់កូដនេះមុន </body> ក្នុងឯកសារ index.html របស់អ្នក -->
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
 
@@ -234,6 +233,12 @@ document.addEventListener('DOMContentLoaded', loadPremiumEmojis);
 const tg = window.Telegram ? window.Telegram.WebApp : null;
 if(tg){ tg.ready(); tg.expand(); }
 
+function getInitData() {
+  if (tg && tg.initData) return tg.initData;
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get('init_data') || '';
+}
+
 function switchTab(tab){
   document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
   document.getElementById('screen-' + tab).classList.remove('hidden');
@@ -257,15 +262,22 @@ async function loadDashboard(){
     document.getElementById('draft-note').textContent = items.filter(i=>!i.published).length + ' ទំនិញកំពុងជា Draft';
   }catch(e){}
 }
+
 async function releaseAll(){
-  const res = await fetch('/api/admin/items/release-all', {
-    method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ init_data: getInitData() })
-  }).then(r => r.json());
-  if(res.error) return alert(res.error);
-  if(tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-  alert(`បាន Release ${res.released} ទំនិញ`);
-  loadDashboard();
+  try {
+    const res = await fetch('/api/admin/items/release-all', {
+      method: 'POST', 
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ init_data: getInitData() })
+    }).then(r => r.json());
+
+    if(res.error) return alert(res.error);
+    if(tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+    alert(`បាន Release ${res.released} ទំនិញ`);
+    loadDashboard();
+  } catch(err) {
+    alert('Failed to release items: ' + err.message);
+  }
 }
 
 /* ---- orders: real GET, approve/reject via /api/admin/orders/<id>/appr|rej ---- */
@@ -291,7 +303,9 @@ async function loadOrders(){
     mount.innerHTML = `<div class="order-card">Error loading — open via /panel</div>`;
   }
 }
+
 function openLightboxAdmin(src){ window.open(src, '_blank'); }
+
 async function decideOrder(id, action){
   const res = await API.adminOrderDecision(id, action);
   if(res.error) return alert(res.error);
@@ -301,6 +315,7 @@ async function decideOrder(id, action){
 
 /* ---- products: conditional Account/Item form ---- */
 function toggleAddForm(){ document.getElementById('add-form').classList.toggle('hidden'); }
+
 function onKindChange(){
   const isAccount = document.getElementById('new-kind').value === 'account';
   document.getElementById('qty-field').classList.toggle('hidden', isAccount);
@@ -339,6 +354,7 @@ async function addProduct(){
   toggleAddForm();
   loadProducts();
 }
+
 async function loadProducts(){
   const mount = document.getElementById('admin-products');
   mount.innerHTML = `<div class="order-card">…</div>`;
@@ -367,6 +383,7 @@ async function loadCoupons(){
     tbody.innerHTML = `<tr><td colspan="4" class="muted">Needs /api/admin/coupons route — see backend patch notes</td></tr>`;
   }
 }
+
 async function closeCoupon(code){
   const res = await API.adminDisableCoupon(code);
   if(res.error) return alert(res.error);
@@ -377,4 +394,3 @@ document.addEventListener('DOMContentLoaded', () => switchTab('dash'));
 </script>
 </body>
 </html>
-```[cite: 1, 12]
