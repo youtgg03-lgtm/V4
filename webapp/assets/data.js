@@ -1,46 +1,68 @@
-// webapp/assets/data.js
-function getInitData() {
-  if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
-    return window.Telegram.WebApp.initData;
-  }
-  return "";
-}
-
 const API = {
-  async adminItems() {
-    const res = await fetch(`/api/admin/items?init_data=${encodeURIComponent(getInitData())}`);
+  async items(cat = "") {
+    const res = await fetch("/api/items" + (cat ? `?category=${encodeURIComponent(cat)}` : ""));
     return await res.json();
   },
-  async adminOrders() {
-    const res = await fetch(`/api/admin/orders?init_data=${encodeURIComponent(getInitData())}`);
+  async rules() {
+    const res = await fetch("/api/rules");
     return await res.json();
   },
-  async adminCoupons() {
-    const res = await fetch(`/api/admin/coupons?init_data=${encodeURIComponent(getInitData())}`);
-    return await res.json();
-  },
-  async adminOrderDecision(id, action) {
-    const res = await fetch(`/api/admin/orders/${id}/${action}`, {
+  async quote(data) {
+    const res = await fetch("/api/order/quote", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ init_data: getInitData() })
+      body: JSON.stringify(data),
     });
     return await res.json();
   },
+  async submitOrder(formData) {
+    const res = await fetch("/api/order/submit", {
+      method: "POST",
+      body: formData,
+    });
+    return await res.json();
+  },
+  async orderStatus(orderId, initData = "") {
+    const res = await fetch(`/api/order/${orderId}/status?init_data=${encodeURIComponent(initData)}`);
+    return await res.json();
+  },
+  async refreshCode(orderId) {
+    const res = await fetch(`/api/order/${orderId}/refresh-code`);
+    return await res.json();
+  },
+  async myOrders(initData = "") {
+    const res = await fetch(`/api/my-orders?init_data=${encodeURIComponent(initData)}`);
+    return await res.json();
+  },
+  async adminItems() {
+    const res = await fetch("/api/admin/items");
+    return await res.json();
+  },
+  async adminOrders() {
+    const res = await fetch("/api/admin/orders");
+    return await res.json();
+  },
+  async adminCoupons() {
+    const res = await fetch("/api/admin/coupons");
+    return await res.json();
+  },
+  async adminOrderDecision(id, action) {
+    const res = await fetch(`/api/admin/orders/${id}/${action}`, { method: "POST" });
+    return await res.json();
+  },
   async adminDisableCoupon(code) {
-    const res = await fetch(`/api/admin/coupons/disable`, {
+    const res = await fetch("/api/admin/coupons/disable", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code: code, init_data: getInitData() })
+      body: JSON.stringify({ code }),
     });
     return await res.json();
   },
   async adminCreateItem(formData) {
-    formData.append("init_data", getInitData());
     const res = await fetch("/api/admin/items", {
       method: "POST",
-      body: formData
+      body: formData,
     });
     return await res.json();
-  }
+  },
 };
