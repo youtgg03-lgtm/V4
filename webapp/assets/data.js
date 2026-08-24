@@ -56,18 +56,37 @@ const API = {
 };
 
 /* ============================================================
-   Category Emoji Config
+   Synchronous Telegram Premium Emoji Mapping (Zero-Delay)
    ============================================================ */
-const CATEGORY_EMOJI = {
-  "Account": "👑",
-  "Fruit": "🍈",
-  "Gamepass": "🎫",
-  "Evade": "🏃",
-  "Robux": "💎",
-  "Blade Ball": "⚔️",
-  "MM2": "🔪",
+const EMOJI_FILE_MAP = {
+  "📁": "5854908544712707500.json",
+  "📦": "5854908544712707500.json",
+  "👑": "5310070232155436036.json",
+  "🍈": "6084765169940961891.json",
+  "🎫": "6301052490242597458.json",
+  "🏃": "5210965493887819972.json",
+  "💎": "5202189539967267386.json",
+  "⚔️": "5408935401442267103.json",
+  "🔪": "5242288969550422350.json",
+  "🛍️": "5836672976862319297.json",
+  "🛍": "5373052667671093676.json",
+  "🧾": "5264959791213586839.json",
+  "💬": "6106980145250177382.json",
+  "🏷️": "5298877105000439431.json",
+  "📊": "5231200819986047254.json",
+  "🚀": "6300989332748506061.json",
+  "🌐": "6107376940098786484.json",
+  "⚡": "6107022708376082350.json",
+  "✅": "5904704361182798355.json",
+  "❌": "6300696192640620174.json",
+  "⏳": "6289745241511565742.json",
+  "🔒": "5296369303661067030.json",
+  "🔓": "6291893425239234198.json",
+  "🔑": "5420094143089111506.json",
+  "🎉": "6107318416874410520.json",
+  "📝": "5837003105228558796.json",
+  "🔴": "6170475670443922913.json"
 };
-function categoryEmoji(cat) { return CATEGORY_EMOJI[cat] || "📦"; }
 
 const CATEGORIES = [
   { id: "all", name_km: "ទាំងអស់", name_en: "All", emoji: "📁" },
@@ -79,6 +98,17 @@ const CATEGORIES = [
   { id: "Blade Ball", name_km: "Blade Ball", name_en: "Blade Ball", emoji: "⚔️" },
   { id: "MM2", name_km: "MM2", name_en: "MM2", emoji: "🔪" }
 ];
+
+const CATEGORY_EMOJI = {
+  "Account": "👑",
+  "Fruit": "🍈",
+  "Gamepass": "🎫",
+  "Evade": "🏃",
+  "Robux": "💎",
+  "Blade Ball": "⚔️",
+  "MM2": "🔪",
+};
+function categoryEmoji(cat) { return CATEGORY_EMOJI[cat] || "📦"; }
 
 /* ============================================================
    KH / EN Dictionary & Translation Engine
@@ -121,7 +151,6 @@ const I18N = {
 let currentLang = 'km';
 let selectedCategory = 'all';
 let allItems = [];
-let _emojiMap = null;
 
 function t(key, ...args) {
   const val = (I18N[currentLang] && I18N[currentLang][key]) || I18N.en[key] || key;
@@ -144,26 +173,13 @@ function toggleLang() {
 }
 
 /* ============================================================
-   Direct Premium Emoji Generator (Zero-Flicker)
+   Instant Direct HTML Generators (No FOUC / No Flashing)
    ============================================================ */
-async function loadEmojiMap() {
-  if (!_emojiMap) {
-    try {
-      const res = await fetch('assets/emoji-files.json');
-      if (res.ok) _emojiMap = await res.json();
-    } catch (e) {
-      console.warn('Could not load emoji map:', e);
-      _emojiMap = {};
-    }
-  }
-  return _emojiMap;
-}
-
 function emojiHtml(emojiChar) {
-  if (!_emojiMap || !_emojiMap[emojiChar]) return emojiChar;
-  const filename = _emojiMap[emojiChar];
+  const filename = EMOJI_FILE_MAP[emojiChar];
+  if (!filename) return emojiChar;
+  
   const ext = filename.split('.').pop().toLowerCase();
-
   if (ext === 'webm') {
     return `<video src="assets/emojis/${filename}" autoplay loop muted playsinline class="premium-emoji premium-emoji-rendered"></video>`;
   } else if (ext === 'json') {
@@ -187,12 +203,8 @@ function initLottieAnimations(container = document.body) {
   });
 }
 
-/* Scans static text nodes once without causing flicker loops */
-async function loadPremiumEmojis(targetNode = document.body) {
-  await loadEmojiMap();
-  if (!_emojiMap) return;
-
-  const emojiChars = Object.keys(_emojiMap).sort((a, b) => b.length - a.length);
+function loadPremiumEmojis(targetNode = document.body) {
+  const emojiChars = Object.keys(EMOJI_FILE_MAP).sort((a, b) => b.length - a.length);
   if (emojiChars.length === 0) return;
 
   const pattern = new RegExp(
@@ -324,7 +336,7 @@ function renderProducts() {
 function selectCategory(catId) {
   selectedCategory = catId;
 
-  // Toggle active styling without re-rendering category elements (prevents reload flicker)
+  // Toggle active styling smoothly without DOM destruction
   document.querySelectorAll('.collection-tile').forEach(el => {
     el.classList.toggle('active', el.dataset.cat === catId);
   });
@@ -351,10 +363,11 @@ function switchTab(tab) {
   }
 }
 
-// Initial Bootstrap
-document.addEventListener('DOMContentLoaded', async () => {
-  await loadEmojiMap();
+// Initial Synchronous Render
+renderCategories();
+loadPremiumEmojis(document.body);
 
+document.addEventListener('DOMContentLoaded', async () => {
   try {
     const res = await API.items();
     allItems = res.items || res || [];
@@ -365,5 +378,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   renderCategories();
   renderProducts();
-  await loadPremiumEmojis(document.body);
+  loadPremiumEmojis(document.body);
 });
