@@ -362,7 +362,4 @@ def api_admin_disable_coupon():
 
 if __name__ == "__main__":
     from config import PORT
-    app.run(host="0.0.0.0", port=PORT, debug=False)
-```[cite: 2, 7, 9]
-
-Replace your `webapp_server.py` with this file and commit changes to Railway[cite: 9]. The panel will now load products, orders, and stats smoothly whether accessed via Telegram or browser.
+    app.run(host="0.0.0.0", port=PORT, debug=False).
