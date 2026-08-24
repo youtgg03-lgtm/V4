@@ -1,10 +1,6 @@
 """
 main.py — Uchiro Store
-Runs the Store Bot, Admin Bot, and the Flask web server together in a
-single process. This is the simplest way to deploy (one Railway
-service, one start command). If you'd rather scale them independently,
-run store_bot.py / admin_bot.py / webapp_server.py as three separate
-Railway services instead — see README.md.
+Runs the Store Bot, Admin Bot, and Flask web server together.
 """
 
 import asyncio
@@ -43,17 +39,20 @@ async def run_bots():
         while True:
             await asyncio.sleep(3600)
 
+    # Initialize all applications first
     for name, application in apps:
         await application.initialize()
         await application.start()
-        await application.updater.start_polling()
-        log.info(f"{name} polling started")
+        # drop_pending_updates=True clears any stuck queue from previous crashes
+        await application.updater.start_polling(drop_pending_updates=True)
+        log.info(f"{name} polling started successfully")
 
     try:
-        await asyncio.Event().wait()  # run forever
+        await asyncio.Event().wait()
     finally:
         for name, application in apps:
-            await application.updater.stop()
+            if application.updater and application.updater.running:
+                await application.updater.stop()
             await application.stop()
             await application.shutdown()
 
@@ -61,7 +60,7 @@ async def run_bots():
 def main():
     db.init_db()
     if not WEBAPP_URL:
-        log.warning("WEBAPP_URL not set — bots will start but the 'Open App' button won't work until you set it to your public Railway domain.")
+        log.warning("WEBAPP_URL not set.")
 
     flask_thread = threading.Thread(target=run_flask, daemon=True)
     flask_thread.start()
