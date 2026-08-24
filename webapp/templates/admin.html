@@ -18,7 +18,7 @@ td{padding:9px 4px; border-bottom:1px solid var(--line); vertical-align:middle;}
 .status-chip{font-family:var(--font-mono); font-size:10px; padding:3px 8px; border-radius:999px;}
 .chip-pending{background:rgba(255,178,48,.15); color:var(--amber);}
 .chip-approved{background:rgba(62,207,142,.15); color:var(--mint);}
-.mini-btn{background:var(--surface-2); border:1px solid var(--line); color:var(--slate); border-radius:7px; padding:6px 11px; font-size:11px;}
+.mini-btn{background:var(--surface-2); border:1px solid var(--line); color:var(--slate); border-radius:7px; padding:6px 11px; font-size:11px; cursor:pointer;}
 </style>
 </head>
 <body>
@@ -41,7 +41,7 @@ td{padding:9px 4px; border-bottom:1px solid var(--line); vertical-align:middle;}
     <div class="order-card">
       <div style="font-weight:700; margin-bottom:6px; font-size:13px;">ទំនិញនៅជា Draft</div>
       <p class="muted" style="font-size:12px; margin-bottom:12px;" id="draft-note"></p>
-      <button class="mini-btn" style="width:100%; padding:10px;" onclick="releaseAll()"><tg-emoji emoji-id="6300989332748506061">🚀</tg-emoji> Release all drafts</button>
+      <button class="mini-btn" style="width:100%; padding:10px;" onclick="releaseAll()">🚀 Release all drafts</button>
     </div>
   </div>
 
@@ -109,10 +109,10 @@ td{padding:9px 4px; border-bottom:1px solid var(--line); vertical-align:middle;}
   </div>
 
   <div class="tabbar">
-    <button class="tab-btn" data-tab="dash" onclick="switchTab('dash')"><span class="icon"><tg-emoji emoji-id="5231200819986047254">📊</tg-emoji></span>Home</button>
-    <button class="tab-btn" data-tab="orders" onclick="switchTab('orders')"><span class="icon"><tg-emoji emoji-id="5264959791213586839">🧾</tg-emoji></span>Order</button>
-    <button class="tab-btn" data-tab="products" onclick="switchTab('products')"><span class="icon"><tg-emoji emoji-id="5854908544712707500">📦</tg-emoji></span>ទំនិញ</button>
-    <button class="tab-btn" data-tab="coupons" onclick="switchTab('coupons')"><span class="icon"><tg-emoji emoji-id="5298877105000439431">🏷️</tg-emoji></span>Coupon</button>
+    <button class="tab-btn" data-tab="dash" onclick="switchTab('dash')"><span class="icon">📊</span>Home</button>
+    <button class="tab-btn" data-tab="orders" onclick="switchTab('orders')"><span class="icon">🧾</span>Order</button>
+    <button class="tab-btn" data-tab="products" onclick="switchTab('products')"><span class="icon">📦</span>ទំនិញ</button>
+    <button class="tab-btn" data-tab="coupons" onclick="switchTab('coupons')"><span class="icon">🏷️</span>Coupon</button>
   </div>
 </div>
 
@@ -125,14 +125,17 @@ function switchTab(tab){
   document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
   document.getElementById('screen-' + tab).classList.remove('hidden');
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-  if(tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+  try {
+    if(tg && tg.isVersionAtLeast && tg.isVersionAtLeast('6.1') && tg.HapticFeedback) {
+      tg.HapticFeedback.impactOccurred('light');
+    }
+  } catch(e){}
   if(tab === 'products') loadProducts();
   if(tab === 'orders') loadOrders();
   if(tab === 'coupons') loadCoupons();
   if(tab === 'dash') loadDashboard();
 }
 
-/* ---- dashboard (derived from real /api/admin/items + /api/admin/orders + /api/admin/coupons) ---- */
 async function loadDashboard(){
   try{
     const [itemsRes, ordersRes, couponsRes] = await Promise.all([API.adminItems(), API.adminOrders(), API.adminCoupons().catch(()=>({coupons:[]}))]);
@@ -144,18 +147,17 @@ async function loadDashboard(){
     document.getElementById('draft-note').textContent = items.filter(i=>!i.published).length + ' ទំនិញកំពុងជា Draft';
   }catch(e){}
 }
+
 async function releaseAll(){
   const res = await fetch('/api/admin/items/release-all', {
     method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ init_data: getInitData() })
+    body: JSON.stringify({ init_data: (tg && tg.initData) ? tg.initData : "" })
   }).then(r => r.json());
   if(res.error) return alert(res.error);
-  if(tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
   alert(`បាន Release ${res.released} ទំនិញ`);
   loadDashboard();
 }
 
-/* ---- orders: real GET, approve/reject via /api/admin/orders/<id>/appr|rej ---- */
 async function loadOrders(){
   const mount = document.getElementById('admin-orders');
   mount.innerHTML = `<div class="order-card">…</div>`;
@@ -170,24 +172,25 @@ async function loadOrders(){
         <div class="muted" style="font-size:11px; margin-top:6px;">buyer: ${o.buyer_chat_id}</div>
         ${o.payment_photo_url ? `<img src="${o.payment_photo_url}" class="zoomable" onclick="openLightboxAdmin('${o.payment_photo_url}')" style="width:100%; border-radius:8px; margin-top:8px; max-height:160px; object-fit:cover; cursor:zoom-in;">` : ''}
         <div class="btn-row">
-          <button class="mini-btn" style="flex:1; background:var(--mint); color:#062617;" onclick="decideOrder(${o.id},'appr')"><tg-emoji emoji-id="5904704361182798355">✅</tg-emoji> អនុម័ត</button>
-          <button class="mini-btn" style="flex:1; background:var(--crimson); color:#fff;" onclick="decideOrder(${o.id},'rej')"><tg-emoji emoji-id="6300696192640620174">❌</tg-emoji> បដិសេធ</button>
+          <button class="mini-btn" style="flex:1; background:var(--mint); color:#062617;" onclick="decideOrder(${o.id},'appr')">✅ អនុម័ត</button>
+          <button class="mini-btn" style="flex:1; background:var(--crimson); color:#fff;" onclick="decideOrder(${o.id},'rej')">❌ បដិសេធ</button>
         </div>
-      </div>`).join('') : `<div class="order-card">គ្មាន Order កំពុងរង់ចាំ <tg-emoji emoji-id="6107318416874410520">🎉</tg-emoji></div>`;
+      </div>`).join('') : `<div class="order-card">គ្មាន Order កំពុងរង់ចាំ 🎉</div>`;
   }catch(e){
     mount.innerHTML = `<div class="order-card">Error loading — open via /panel</div>`;
   }
 }
+
 function openLightboxAdmin(src){ window.open(src, '_blank'); }
+
 async function decideOrder(id, action){
   const res = await API.adminOrderDecision(id, action);
   if(res.error) return alert(res.error);
-  if(tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
   document.getElementById('admin-order-' + id).remove();
 }
 
-/* ---- products: conditional Account/Item form ---- */
 function toggleAddForm(){ document.getElementById('add-form').classList.toggle('hidden'); }
+
 function onKindChange(){
   const isAccount = document.getElementById('new-kind').value === 'account';
   document.getElementById('qty-field').classList.toggle('hidden', isAccount);
@@ -226,6 +229,7 @@ async function addProduct(){
   toggleAddForm();
   loadProducts();
 }
+
 async function loadProducts(){
   const mount = document.getElementById('admin-products');
   mount.innerHTML = `<div class="order-card">…</div>`;
@@ -234,14 +238,13 @@ async function loadProducts(){
     mount.innerHTML = (data.items||[]).map(p => `
       <div class="order-card">
         <div class="row-between">
-          <div><div style="font-weight:600; font-size:13px;">${p.name}</div><div class="muted mono" style="font-size:11px; margin-top:3px;">${p.category} · #${p.id}${!p.published ? ' · <tg-emoji emoji-id="5837003105228558796">📝</tg-emoji>Draft' : ''}</div></div>
+          <div><div style="font-weight:600; font-size:13px;">${p.name}</div><div class="muted mono" style="font-size:11px; margin-top:3px;">${p.category} · #${p.id}${!p.published ? ' · 📝Draft' : ''}</div></div>
           <div style="text-align:right;"><div class="mono" style="font-weight:700;">$${p.price}</div><div class="muted mono" style="font-size:11px;">${p.category==='Account' ? '' : p.quantity + ' left'}</div></div>
         </div>
       </div>`).join('');
   }catch(e){ mount.innerHTML = `<div class="order-card">Error — open via /panel</div>`; }
 }
 
-/* ---- coupons: real GET via /api/admin/coupons, disable via route ---- */
 async function loadCoupons(){
   const tbody = document.getElementById('coupons-table');
   try{
@@ -249,11 +252,12 @@ async function loadCoupons(){
     tbody.innerHTML = (data.coupons||[]).map(c => `
       <tr><td class="mono">${c.code}</td><td>${c.discount_type==='percent'?c.amount+'%':'$'+c.amount}</td>
         <td class="mono">${c.used_count}/${c.max_uses}</td>
-        <td><button class="mini-btn" onclick="closeCoupon('${c.code}')">${c.active ? 'បិទ' : '<tg-emoji emoji-id="6170475670443922913">🔴</tg-emoji>'}</button></td></tr>`).join('');
+        <td><button class="mini-btn" onclick="closeCoupon('${c.code}')">${c.active ? 'បិទ' : '🔴'}</button></td></tr>`).join('');
   }catch(e){
-    tbody.innerHTML = `<tr><td colspan="4" class="muted">Needs /api/admin/coupons route — see backend patch notes</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4" class="muted">Needs /api/admin/coupons route</td></tr>`;
   }
 }
+
 async function closeCoupon(code){
   const res = await API.adminDisableCoupon(code);
   if(res.error) return alert(res.error);
@@ -264,4 +268,3 @@ document.addEventListener('DOMContentLoaded', () => switchTab('dash'));
 </script>
 </body>
 </html>
-```[cite: 1, 12]
