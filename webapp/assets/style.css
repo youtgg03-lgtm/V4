@@ -40,7 +40,11 @@ button, input, select, textarea{font-family:inherit; color:inherit;}
 .topbar .mark{width:26px;height:26px;border-radius:8px; background:conic-gradient(from 180deg, var(--amber), var(--crimson), var(--amber)); display:flex;align-items:center;justify-content:center; color:var(--void); font-size:12px; font-family:var(--font-display);}
 .topbar .mark img{width:100%; height:100%; object-fit:cover; border-radius:8px;}
 .topbar-right{display:flex; align-items:center; gap:8px;}
-.lang-toggle{background:var(--surface-2); border:1px solid var(--line); border-radius:999px; padding:5px 10px; font-size:11px; color:var(--slate); font-family:var(--font-mono);}
+.lang-toggle{
+  background:var(--surface-2); border:1px solid var(--line); border-radius:999px;
+  padding:5px 10px; font-size:11px; color:var(--slate); font-family:var(--font-mono);
+  display:inline-flex; align-items:center; gap:4px; line-height:1; cursor:pointer;
+}
 .lang-toggle strong{color:var(--amber);}
 
 /* ---------- scroll content ---------- */
@@ -70,7 +74,7 @@ button, input, select, textarea{font-family:inherit; color:inherit;}
 }
 .collection-tile:active{transform:scale(.94);}
 .collection-tile.active{border-color:var(--amber); box-shadow:0 0 0 1px var(--amber), 0 6px 18px rgba(255,178,48,.18);}
-.collection-tile .emoji{font-size:24px; filter:drop-shadow(0 2px 6px rgba(0,0,0,.4));}
+.collection-tile .emoji{font-size:24px; filter:drop-shadow(0 2px 6px rgba(0,0,0,.4)); display:flex; align-items:center; justify-content:center; min-height:28px;}
 .collection-tile .label{font-size:9.5px; font-family:var(--font-mono); color:var(--slate); text-align:center; line-height:1.2;}
 .collection-tile.active .label{color:var(--amber); font-weight:700;}
 .collection-tile .count{font-size:8px; color:var(--slate-dim); font-family:var(--font-mono);}
@@ -174,6 +178,8 @@ button, input, select, textarea{font-family:inherit; color:inherit;}
 .warranty-countdown .big{font-family:var(--font-display); font-size:22px; color:var(--amber); letter-spacing:.02em;}
 .warranty-countdown.expired{background:rgba(232,67,63,.1); border-color:rgba(232,67,63,.4);}
 .warranty-countdown.expired .big{color:var(--crimson);}
+
+/* ---------- premium animated emojis ---------- */
 .premium-emoji {
   width: 1.25em;
   height: 1.25em;
@@ -234,7 +240,16 @@ button, input, select, textarea{font-family:inherit; color:inherit;}
 .empty-state{text-align:center; padding:60px 20px; color:var(--slate);}
 
 /* ---------- bottom tab bar ---------- */
-.tabbar{position:fixed; left:0; right:0; bottom:0; z-index:30; display:flex; background:rgba(20,22,29,.94); backdrop-filter:blur(16px); border-top:1px solid var(--line); padding:8px 6px calc(8px + var(--safe-bottom));}
-.tab-btn{flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:0; padding:6px 0; color:var(--slate-dim); font-size:10.5px; font-family:var(--font-mono);}
-.tab-btn .icon{font-size:18px;}
+.tabbar{
+  position:fixed; left:0; right:0; bottom:0; z-index:30;
+  display:flex; background:rgba(20,22,29,.94); backdrop-filter:blur(16px);
+  border-top:1px solid var(--line); padding:8px 6px calc(8px + var(--safe-bottom));
+}
+.tab-btn{
+  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:3px; background:none; border:0; padding:6px 0; color:var(--slate-dim);
+  font-size:10.5px; font-family:var(--font-mono); cursor:pointer;
+}
+.tab-btn .icon{font-size:18px; line-height:1; display:flex; align-items:center; justify-content:center; min-height:20px;}
+.tab-btn .label{font-size:10.5px; line-height:1.2;}
 .tab-btn.active{color:var(--amber);}
