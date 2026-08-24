@@ -119,43 +119,80 @@ const I18N = {
 };
 
 let currentLang = 'km';
-
-function setLang(lang) {
-  if (I18N[lang]) {
-    currentLang = lang;
-    document.dispatchEvent(new CustomEvent('langchange', { detail: { lang } }));
-  }
-}
+let selectedCategory = 'all';
+let allItems = [];
+let _emojiMap = null;
 
 function t(key, ...args) {
   const val = (I18N[currentLang] && I18N[currentLang][key]) || I18N.en[key] || key;
   return typeof val === 'function' ? val(...args) : val;
 }
 
-/* ============================================================
-   Telegram Premium Animated Emoji Replacer + Auto-Observer
-   ============================================================ */
-let _emojiMap = null;
-let _isProcessingEmojis = false;
+function setLang(lang) {
+  if (I18N[lang]) {
+    currentLang = lang;
+    document.dispatchEvent(new CustomEvent('langchange', { detail: { lang } }));
+    renderCategories();
+    renderProducts();
+  }
+}
 
-async function getEmojiMap() {
+function toggleLang() {
+  setLang(currentLang === 'km' ? 'en' : 'km');
+  const label = document.getElementById('lang-label');
+  if (label) label.textContent = currentLang.toUpperCase();
+}
+
+/* ============================================================
+   Direct Premium Emoji Generator (Zero-Flicker)
+   ============================================================ */
+async function loadEmojiMap() {
   if (!_emojiMap) {
     try {
       const res = await fetch('assets/emoji-files.json');
       if (res.ok) _emojiMap = await res.json();
     } catch (e) {
-      console.warn('Failed to load emoji map:', e);
+      console.warn('Could not load emoji map:', e);
+      _emojiMap = {};
     }
   }
   return _emojiMap;
 }
 
-async function loadPremiumEmojis(targetNode = document.body) {
-  if (_isProcessingEmojis) return;
-  const emojiMap = await getEmojiMap();
-  if (!emojiMap) return;
+function emojiHtml(emojiChar) {
+  if (!_emojiMap || !_emojiMap[emojiChar]) return emojiChar;
+  const filename = _emojiMap[emojiChar];
+  const ext = filename.split('.').pop().toLowerCase();
 
-  const emojiChars = Object.keys(emojiMap).sort((a, b) => b.length - a.length);
+  if (ext === 'webm') {
+    return `<video src="assets/emojis/${filename}" autoplay loop muted playsinline class="premium-emoji premium-emoji-rendered"></video>`;
+  } else if (ext === 'json') {
+    return `<span class="lottie-emoji premium-emoji-rendered" data-src="assets/emojis/${filename}"></span>`;
+  } else {
+    return `<img src="assets/emojis/${filename}" alt="${emojiChar}" class="premium-emoji premium-emoji-rendered">`;
+  }
+}
+
+function initLottieAnimations(container = document.body) {
+  if (!window.lottie) return;
+  container.querySelectorAll('.lottie-emoji:not([data-rendered])').forEach(el => {
+    el.setAttribute('data-rendered', 'true');
+    lottie.loadAnimation({
+      container: el,
+      path: el.dataset.src,
+      renderer: 'svg',
+      loop: true,
+      autoplay: true
+    });
+  });
+}
+
+/* Scans static text nodes once without causing flicker loops */
+async function loadPremiumEmojis(targetNode = document.body) {
+  await loadEmojiMap();
+  if (!_emojiMap) return;
+
+  const emojiChars = Object.keys(_emojiMap).sort((a, b) => b.length - a.length);
   if (emojiChars.length === 0) return;
 
   const pattern = new RegExp(
@@ -163,129 +200,170 @@ async function loadPremiumEmojis(targetNode = document.body) {
     'g'
   );
 
-  _isProcessingEmojis = true;
-
-  try {
-    const walker = document.createTreeWalker(
-      targetNode,
-      NodeFilter.SHOW_TEXT,
-      {
-        acceptNode: (node) => {
-          const parent = node.parentElement;
-          if (!parent) return NodeFilter.FILTER_REJECT;
-          if (['SCRIPT', 'STYLE', 'TG-EMOJI', 'TEXTAREA', 'INPUT', 'VIDEO'].includes(parent.nodeName)) {
-            return NodeFilter.FILTER_REJECT;
-          }
-          if (parent.closest('.premium-emoji-rendered') || parent.closest('.lottie-emoji')) {
-            return NodeFilter.FILTER_REJECT;
-          }
-          return NodeFilter.FILTER_ACCEPT;
+  const walker = document.createTreeWalker(
+    targetNode,
+    NodeFilter.SHOW_TEXT,
+    {
+      acceptNode: (node) => {
+        const parent = node.parentElement;
+        if (!parent) return NodeFilter.FILTER_REJECT;
+        if (['SCRIPT', 'STYLE', 'TG-EMOJI', 'TEXTAREA', 'INPUT', 'VIDEO'].includes(parent.nodeName)) {
+          return NodeFilter.FILTER_REJECT;
         }
-      }
-    );
-
-    const textNodes = [];
-    while (walker.nextNode()) textNodes.push(walker.currentNode);
-
-    textNodes.forEach(node => {
-      const text = node.nodeValue;
-      pattern.lastIndex = 0;
-      if (!pattern.test(text)) return;
-      pattern.lastIndex = 0;
-
-      const frag = document.createDocumentFragment();
-      let lastIndex = 0;
-      let match;
-
-      while ((match = pattern.exec(text)) !== null) {
-        const before = text.slice(lastIndex, match.index);
-        if (before) frag.appendChild(document.createTextNode(before));
-
-        const filename = emojiMap[match[0]];
-        const ext = filename.split('.').pop().toLowerCase();
-        let el;
-
-        if (ext === 'webm') {
-          el = document.createElement('video');
-          el.src = `assets/emojis/${filename}`;
-          el.autoplay = true;
-          el.loop = true;
-          el.muted = true;
-          el.playsInline = true;
-          el.className = 'premium-emoji premium-emoji-rendered';
-        } else if (ext === 'json') {
-          el = document.createElement('span');
-          el.className = 'lottie-emoji premium-emoji-rendered';
-          el.dataset.src = `assets/emojis/${filename}`;
-        } else {
-          el = document.createElement('img');
-          el.src = `assets/emojis/${filename}`;
-          el.alt = match[0];
-          el.className = 'premium-emoji premium-emoji-rendered';
+        if (parent.closest('.premium-emoji-rendered') || parent.closest('.lottie-emoji')) {
+          return NodeFilter.FILTER_REJECT;
         }
-
-        frag.appendChild(el);
-        lastIndex = pattern.lastIndex;
+        return NodeFilter.FILTER_ACCEPT;
       }
-
-      const after = text.slice(lastIndex);
-      if (after) frag.appendChild(document.createTextNode(after));
-
-      if (node.parentNode) {
-        node.parentNode.replaceChild(frag, node);
-      }
-    });
-
-    if (window.lottie) {
-      targetNode.querySelectorAll('.lottie-emoji:not([data-rendered])').forEach(el => {
-        el.setAttribute('data-rendered', 'true');
-        lottie.loadAnimation({
-          container: el,
-          path: el.dataset.src,
-          renderer: 'svg',
-          loop: true,
-          autoplay: true
-        });
-      });
     }
-  } catch (err) {
-    console.warn('Emoji replacement failed:', err);
-  } finally {
-    _isProcessingEmojis = false;
-  }
-}
+  );
 
-// Auto-Observer: Automatically intercepts any clicks, filters, or tab switches
-let _observerDebounce = null;
-function initEmojiObserver() {
-  const observer = new MutationObserver((mutations) => {
-    if (_isProcessingEmojis) return;
+  const textNodes = [];
+  while (walker.nextNode()) textNodes.push(walker.currentNode);
 
-    let hasNewText = false;
-    for (const m of mutations) {
-      if (m.addedNodes.length > 0) {
-        for (const node of m.addedNodes) {
-          if (node.nodeType === Node.ELEMENT_NODE && !node.classList.contains('premium-emoji-rendered')) {
-            hasNewText = true;
-            break;
-          }
-        }
+  textNodes.forEach(node => {
+    const text = node.nodeValue;
+    pattern.lastIndex = 0;
+    if (!pattern.test(text)) return;
+    pattern.lastIndex = 0;
+
+    const frag = document.createDocumentFragment();
+    let lastIndex = 0;
+    let match;
+
+    while ((match = pattern.exec(text)) !== null) {
+      const before = text.slice(lastIndex, match.index);
+      if (before) frag.appendChild(document.createTextNode(before));
+
+      const wrapper = document.createElement('span');
+      wrapper.innerHTML = emojiHtml(match[0]);
+      while (wrapper.firstChild) {
+        frag.appendChild(wrapper.firstChild);
       }
-      if (hasNewText) break;
+
+      lastIndex = pattern.lastIndex;
     }
 
-    if (hasNewText) {
-      clearTimeout(_observerDebounce);
-      _observerDebounce = setTimeout(() => {
-        loadPremiumEmojis(document.body);
-      }, 25);
+    const after = text.slice(lastIndex);
+    if (after) frag.appendChild(document.createTextNode(after));
+
+    if (node.parentNode) {
+      node.parentNode.replaceChild(frag, node);
     }
   });
 
-  observer.observe(document.body, { childList: true, subtree: true });
+  initLottieAnimations(targetNode);
 }
 
+/* ============================================================
+   Category & Product Rendering Flow
+   ============================================================ */
+function renderCategories() {
+  const grid = document.getElementById('collection-grid') || document.getElementById('category-grid');
+  const chips = document.getElementById('chip-row') || document.getElementById('category-pills');
+
+  const counts = { all: allItems.length };
+  allItems.forEach(item => {
+    counts[item.category] = (counts[item.category] || 0) + (item.quantity || 1);
+  });
+
+  if (grid) {
+    grid.innerHTML = CATEGORIES.map(cat => `
+      <div class="collection-tile ${selectedCategory === cat.id ? 'active' : ''}" data-cat="${cat.id}" onclick="selectCategory('${cat.id}')">
+        <div class="emoji">${emojiHtml(cat.emoji)}</div>
+        <div class="label">${currentLang === 'km' ? cat.name_km : cat.name_en}</div>
+        <div class="count">${counts[cat.id] || 0}</div>
+      </div>
+    `).join('');
+    initLottieAnimations(grid);
+  }
+
+  if (chips) {
+    chips.innerHTML = CATEGORIES.map(cat => `
+      <button class="chip ${selectedCategory === cat.id ? 'active' : ''}" data-cat="${cat.id}" onclick="selectCategory('${cat.id}')">
+        ${currentLang === 'km' ? cat.name_km : cat.name_en}
+      </button>
+    `).join('');
+  }
+}
+
+function renderProducts() {
+  const pgrid = document.getElementById('product-grid');
+  if (!pgrid) return;
+
+  const filtered = selectedCategory === 'all' 
+    ? allItems 
+    : allItems.filter(i => i.category === selectedCategory);
+
+  if (filtered.length === 0) {
+    pgrid.innerHTML = `<div class="empty-state" style="grid-column: 1/-1;">គ្មានទំនិញទេ</div>`;
+    return;
+  }
+
+  pgrid.innerHTML = filtered.map(item => `
+    <div class="pcard ${item.quantity <= 0 ? 'sold-out' : ''}" onclick="openProductSheet(${item.id})">
+      <div class="pcard-media">
+        ${item.image_url ? `<img src="${item.image_url}" alt="${item.name}">` : `<div class="placeholder-emoji">${emojiHtml(categoryEmoji(item.category))}</div>`}
+        ${item.warranty_days ? `<div class="warranty-ribbon">${t('warranty_days', item.warranty_days)}</div>` : ''}
+        ${item.is_new ? `<div class="new-badge">${t('new')}</div>` : ''}
+      </div>
+      <div class="pcard-body">
+        <h3>${item.name}</h3>
+        <div class="pcard-foot">
+          <span class="price">$${item.price}</span>
+          <span class="stock">${item.quantity > 0 ? item.quantity + ' left' : t('sold_out')}</span>
+        </div>
+        <button class="buy-btn" ${item.quantity <= 0 ? 'disabled' : ''}>${item.quantity > 0 ? t('buy_now') : t('sold_out')}</button>
+      </div>
+    </div>
+  `).join('');
+
+  initLottieAnimations(pgrid);
+}
+
+function selectCategory(catId) {
+  selectedCategory = catId;
+
+  // Toggle active styling without re-rendering category elements (prevents reload flicker)
+  document.querySelectorAll('.collection-tile').forEach(el => {
+    el.classList.toggle('active', el.dataset.cat === catId);
+  });
+  document.querySelectorAll('.chip').forEach(el => {
+    el.classList.toggle('active', el.dataset.cat === catId);
+  });
+
+  renderProducts();
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  const activeScreen = document.getElementById('screen-' + tab);
+  if (activeScreen) activeScreen.classList.remove('hidden');
+
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+
+  if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+    window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+  }
+
+  if (tab === 'shop') {
+    renderProducts();
+  }
+}
+
+// Initial Bootstrap
 document.addEventListener('DOMContentLoaded', async () => {
+  await loadEmojiMap();
+
+  try {
+    const res = await API.items();
+    allItems = res.items || res || [];
+  } catch (err) {
+    console.error('Failed to load items:', err);
+    allItems = [];
+  }
+
+  renderCategories();
+  renderProducts();
   await loadPremiumEmojis(document.body);
-  initEmojiObserver();
 });
