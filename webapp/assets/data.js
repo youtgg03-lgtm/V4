@@ -1,20 +1,17 @@
 /* ============================================================
-   Real API wiring for webapp_server.py, plus the small set of
-   NEW routes this update needs (marked with ⚠️ NEW — see the
-   backend patch notes for the Flask code to add).
+   Telegram Mini App API Client & Utilities
    ============================================================ */
 
-function getInitData(){
+function getInitData() {
   return (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) || '';
 }
 
 const API = {
   items: () => fetch('/api/items').then(r => r.json()),
 
-  // ⚠️ NEW: quote now optionally accepts a coupon code and returns the
-  // discounted total. See backend patch notes for the updated route.
   quote: (item_id, coupon_code) => fetch('/api/order/quote', {
-    method: 'POST', headers: {'Content-Type': 'application/json'},
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ item_id, coupon_code: coupon_code || undefined, init_data: getInitData() })
   }).then(r => r.json()),
 
@@ -22,9 +19,9 @@ const API = {
     const form = new FormData();
     form.append('init_data', getInitData());
     form.append('item_id', item_id);
-    if(khqr_md5) form.append('khqr_md5', khqr_md5);
-    if(coupon_code) form.append('coupon_code', coupon_code); // ⚠️ NEW field
-    if(photoFile) form.append('photo', photoFile);
+    if (khqr_md5) form.append('khqr_md5', khqr_md5);
+    if (coupon_code) form.append('coupon_code', coupon_code);
+    if (photoFile) form.append('photo', photoFile);
     return fetch('/api/order/submit', { method: 'POST', body: form }).then(r => r.json());
   },
 
@@ -33,9 +30,10 @@ const API = {
   myOrders: () => fetch(`/api/my-orders?init_data=${encodeURIComponent(getInitData())}`).then(r => r.json()),
   rules: () => fetch('/api/rules').then(r => r.json()),
 
-  // ---- admin ----
+  // ---- Admin Endpoints ----
   adminVerify: () => fetch('/api/admin/verify', {
-    method: 'POST', headers: {'Content-Type': 'application/json'},
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ init_data: getInitData() })
   }).then(r => r.json()),
   adminItems: () => fetch(`/api/admin/items?init_data=${encodeURIComponent(getInitData())}`).then(r => r.json()),
@@ -44,31 +42,35 @@ const API = {
     formData.append('init_data', getInitData());
     return fetch('/api/admin/items', { method: 'POST', body: formData }).then(r => r.json());
   },
-  // ⚠️ NEW routes — see backend patch notes
   adminCoupons: () => fetch(`/api/admin/coupons?init_data=${encodeURIComponent(getInitData())}`).then(r => r.json()),
   adminDisableCoupon: (code) => fetch('/api/admin/coupons/disable', {
-    method: 'POST', headers: {'Content-Type': 'application/json'},
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ init_data: getInitData(), code })
   }).then(r => r.json()),
   adminOrderDecision: (order_id, action) => fetch(`/api/admin/orders/${order_id}/${action}`, {
-    method: 'POST', headers: {'Content-Type': 'application/json'},
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ init_data: getInitData() })
   }).then(r => r.json()),
 };
 
 /* ============================================================
-   Category emoji — one place to edit when you swap these for
-   Telegram Premium emoji later (just change the values below).
+   Category Emoji Config
    ============================================================ */
 const CATEGORY_EMOJI = {
-  "Account": "👑", "Fruit": "🍈", "Gamepass": "🎫", "Evade": "🏃",
-  "Robux": "💎", "Blade Ball": "⚔️", "MM2": "🔪",
+  "Account": "👑",
+  "Fruit": "🍈",
+  "Gamepass": "🎫",
+  "Evade": "🏃",
+  "Robux": "💎",
+  "Blade Ball": "⚔️",
+  "MM2": "🔪",
 };
-function categoryEmoji(cat){ return CATEGORY_EMOJI[cat] || "📦"; }
+function categoryEmoji(cat) { return CATEGORY_EMOJI[cat] || "📦"; }
 
 /* ============================================================
-   KH / EN dictionary — small, only the strings that actually
-   appear in the UI. Switch with setLang('km' | 'en').
+   KH / EN Dictionary & Translation Engine
    ============================================================ */
 const I18N = {
   en: {
@@ -104,8 +106,124 @@ const I18N = {
     join_channel: "ចូល Channel", song: "តន្ត្រី", how_to_login_full: "របៀបដំឡើង និងចូលគណនី",
   }
 };
+
 let currentLang = 'km';
-function t(key, ...args){
+
+function setLang(lang) {
+  if (I18N[lang]) {
+    currentLang = lang;
+    document.dispatchEvent(new CustomEvent('langchange', { detail: { lang } }));
+  }
+}
+
+function t(key, ...args) {
   const val = (I18N[currentLang] && I18N[currentLang][key]) || I18N.en[key] || key;
   return typeof val === 'function' ? val(...args) : val;
 }
+
+/* ============================================================
+   Telegram Premium Animated Emoji Replacer
+   ============================================================ */
+let _emojiMap = null;
+
+async function loadPremiumEmojis(targetNode = document.body) {
+  try {
+    if (!_emojiMap) {
+      const res = await fetch('assets/emoji-files.json');
+      if (!res.ok) return;
+      _emojiMap = await res.json();
+    }
+
+    const emojiChars = Object.keys(_emojiMap).sort((a, b) => b.length - a.length);
+    if (emojiChars.length === 0) return;
+
+    const pattern = new RegExp(
+      emojiChars.map(e => e.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'),
+      'g'
+    );
+
+    const walker = document.createTreeWalker(
+      targetNode,
+      NodeFilter.SHOW_TEXT,
+      {
+        acceptNode: (node) => {
+          const parentTag = node.parentNode ? node.parentNode.nodeName : '';
+          if (['SCRIPT', 'STYLE', 'TEXTAREA', 'INPUT'].includes(parentTag)) {
+            return NodeFilter.FILTER_REJECT;
+          }
+          return NodeFilter.FILTER_ACCEPT;
+        }
+      }
+    );
+
+    const textNodes = [];
+    while (walker.nextNode()) textNodes.push(walker.currentNode);
+
+    textNodes.forEach(node => {
+      const text = node.nodeValue;
+      pattern.lastIndex = 0;
+      if (!pattern.test(text)) return;
+      pattern.lastIndex = 0;
+
+      const frag = document.createDocumentFragment();
+      let lastIndex = 0;
+      let match;
+
+      while ((match = pattern.exec(text)) !== null) {
+        const before = text.slice(lastIndex, match.index);
+        if (before) frag.appendChild(document.createTextNode(before));
+
+        const filename = _emojiMap[match[0]];
+        const ext = filename.split('.').pop().toLowerCase();
+        let el;
+
+        if (ext === 'webm') {
+          el = document.createElement('video');
+          el.src = `assets/emojis/${filename}`;
+          el.autoplay = true;
+          el.loop = true;
+          el.muted = true;
+          el.playsInline = true;
+          el.className = 'premium-emoji';
+        } else if (ext === 'json') {
+          el = document.createElement('span');
+          el.className = 'lottie-emoji';
+          el.dataset.src = `assets/emojis/${filename}`;
+        } else {
+          el = document.createElement('img');
+          el.src = `assets/emojis/${filename}`;
+          el.alt = match[0];
+          el.className = 'premium-emoji';
+        }
+
+        frag.appendChild(el);
+        lastIndex = pattern.lastIndex;
+      }
+
+      const after = text.slice(lastIndex);
+      if (after) frag.appendChild(document.createTextNode(after));
+
+      if (node.parentNode) {
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+
+    if (window.lottie) {
+      targetNode.querySelectorAll('.lottie-emoji:not([data-rendered])').forEach(el => {
+        el.setAttribute('data-rendered', 'true');
+        lottie.loadAnimation({
+          container: el,
+          path: el.dataset.src,
+          renderer: 'svg',
+          loop: true,
+          autoplay: true
+        });
+      });
+    }
+  } catch (err) {
+    console.warn('Emoji replacement failed:', err);
+  }
+}
+
+// Auto-run when the initial HTML loads
+document.addEventListener('DOMContentLoaded', () => loadPremiumEmojis());
