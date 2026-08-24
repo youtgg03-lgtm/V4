@@ -4,15 +4,24 @@
 
 const tg = window.Telegram ? window.Telegram.WebApp : null;
 if (tg) {
-  tg.ready();
-  tg.expand();
+  try {
+    tg.ready();
+    tg.expand();
+  } catch (e) {}
+}
+
+function triggerHaptic(type = "light") {
+  try {
+    if (tg && tg.isVersionAtLeast && tg.isVersionAtLeast("6.1") && tg.HapticFeedback) {
+      tg.HapticFeedback.impactOccurred(type);
+    }
+  } catch (e) {}
 }
 
 let CURRENT_LANG = "KM";
 let CURRENT_CATEGORY = "ALL";
 let ALL_ITEMS = [];
 let ACTIVE_ORDER_ID = null;
-let TOTP_INTERVAL = null;
 
 const I18N = {
   KM: {
@@ -67,7 +76,8 @@ function getInitData() {
 
 function toggleLang() {
   CURRENT_LANG = CURRENT_LANG === "KM" ? "EN" : "KM";
-  document.getElementById("lang-label").textContent = CURRENT_LANG;
+  const lbl = document.getElementById("lang-label");
+  if (lbl) lbl.textContent = CURRENT_LANG;
   document.querySelectorAll("[data-i18n]").forEach(el => {
     const key = el.getAttribute("data-i18n");
     if (I18N[CURRENT_LANG][key]) {
@@ -78,6 +88,7 @@ function toggleLang() {
 }
 
 function switchTab(tab) {
+  triggerHaptic("light");
   document.querySelectorAll(".screen").forEach(s => s.classList.add("hidden"));
   const activeScreen = document.getElementById("screen-" + tab);
   if (activeScreen) activeScreen.classList.remove("hidden");
@@ -85,8 +96,6 @@ function switchTab(tab) {
   document.querySelectorAll(".tab-btn").forEach(b => {
     b.classList.toggle("active", b.dataset.tab === tab);
   });
-
-  if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred("light");
 
   if (tab === "shop") loadShop();
   if (tab === "orders") loadOrders();
@@ -100,7 +109,7 @@ async function loadShop() {
     renderChips(data.categories || []);
     renderItems();
   } catch (e) {
-    console.error("Failed to load shop items", e);
+    console.error("Failed to load items", e);
   }
 }
 
@@ -116,6 +125,7 @@ function renderChips(categories) {
 }
 
 function selectCategory(cat) {
+  triggerHaptic("light");
   CURRENT_CATEGORY = cat;
   document.querySelectorAll("#chip-row .chip").forEach(b => {
     b.classList.toggle("active", b.textContent.trim() === cat);
@@ -151,20 +161,25 @@ function renderItems() {
 }
 
 function openProduct(id) {
+  triggerHaptic("light");
   const item = ALL_ITEMS.find(i => i.id === id);
   if (!item) return;
 
   const body = document.getElementById("product-sheet-body");
-  body.innerHTML = `
-    ${item.photo_url ? `<img src="${item.photo_url}" style="width:100%; border-radius:12px; max-height:220px; object-fit:cover; margin-bottom:12px;">` : ''}
-    <h2 style="font-size:18px; margin-bottom:4px;">${item.name}</h2>
-    <div class="p-price" style="font-size:20px; margin-bottom:10px;">$${item.price}</div>
-    <p class="muted" style="font-size:13px; line-height:1.6; margin-bottom:16px;">${item.description || 'គ្មានការពិពណ៌នាបន្ថែម'}</p>
-    <button class="btn-primary" onclick="openCheckout(${item.id})">ទិញឥឡូវ ($${item.price})</button>
-  `;
+  if (body) {
+    body.innerHTML = `
+      ${item.photo_url ? `<img src="${item.photo_url}" style="width:100%; border-radius:12px; max-height:220px; object-fit:cover; margin-bottom:12px;">` : ''}
+      <h2 style="font-size:18px; margin-bottom:4px;">${item.name}</h2>
+      <div class="p-price" style="font-size:20px; margin-bottom:10px;">$${item.price}</div>
+      <p class="muted" style="font-size:13px; line-height:1.6; margin-bottom:16px;">${item.description || 'គ្មានការពិពណ៌នាបន្ថែម'}</p>
+      <button class="btn-primary" onclick="openCheckout(${item.id})">ទិញឥឡូវ ($${item.price})</button>
+    `;
+  }
 
-  document.getElementById("backdrop").classList.add("active");
-  document.getElementById("product-sheet").classList.add("active");
+  const backdrop = document.getElementById("backdrop");
+  const sheet = document.getElementById("product-sheet");
+  if (backdrop) backdrop.classList.add("active");
+  if (sheet) sheet.classList.add("active");
 }
 
 /* ---------------- CHECKOUT LOGIC ---------------- */
@@ -172,6 +187,7 @@ let CURRENT_ITEM = null;
 let SCREENSHOT_FILE = null;
 
 async function openCheckout(itemId) {
+  triggerHaptic("light");
   CURRENT_ITEM = ALL_ITEMS.find(i => i.id === itemId);
   if (!CURRENT_ITEM) return;
 
@@ -194,10 +210,12 @@ async function openCheckout(itemId) {
 
   const quote = await API.quote({ item_id: itemId, init_data: getInitData() });
   const qrBox = document.getElementById("checkout-qr");
-  if (quote.qr_url) {
-    qrBox.innerHTML = `<img src="${quote.qr_url}" style="width:180px; height:180px; margin:auto; display:block; border-radius:8px;">`;
-  } else {
-    qrBox.innerHTML = `<div class="muted" style="font-size:12px; text-align:center; padding:20px;">${quote.note || 'Scan KHQR'}</div>`;
+  if (qrBox) {
+    if (quote.qr_url) {
+      qrBox.innerHTML = `<img src="${quote.qr_url}" style="width:180px; height:180px; margin:auto; display:block; border-radius:8px;">`;
+    } else {
+      qrBox.innerHTML = `<div class="muted" style="font-size:12px; text-align:center; padding:20px;">${quote.note || 'Scan KHQR'}</div>`;
+    }
   }
 }
 
@@ -241,15 +259,16 @@ async function submitOrder() {
   form.append("coupon_code", document.getElementById("coupon-input").value.trim());
   form.append("photo", SCREENSHOT_FILE);
 
-  document.getElementById("submit-order-btn").disabled = true;
-  document.getElementById("submit-order-btn").textContent = "Uploading…";
+  const btn = document.getElementById("submit-order-btn");
+  btn.disabled = true;
+  btn.textContent = "Uploading…";
 
   try {
     const res = await API.submitOrder(form);
     if (res.error) {
       alert(res.error);
-      document.getElementById("submit-order-btn").disabled = false;
-      document.getElementById("submit-order-btn").textContent = "Submit order";
+      btn.disabled = false;
+      btn.textContent = "Submit order";
       return;
     }
 
@@ -261,7 +280,8 @@ async function submitOrder() {
     startOrderPolling(res.order_id);
   } catch (e) {
     alert("Error submitting order");
-    document.getElementById("submit-order-btn").disabled = false;
+    btn.disabled = false;
+    btn.textContent = "Submit order";
   }
 }
 
@@ -301,6 +321,7 @@ function showDelivery(data) {
 /* ---------------- ORDERS LIST ---------------- */
 async function loadOrders() {
   const mount = document.getElementById("orders-list");
+  if (!mount) return;
   mount.innerHTML = `<div class="order-card">Loading…</div>`;
   try {
     const data = await API.myOrders(getInitData());
@@ -326,13 +347,17 @@ async function loadOrders() {
 
 /* ---------------- MODALS & HELPERS ---------------- */
 function closeSheet() {
-  document.getElementById("backdrop").classList.remove("active");
+  const backdrop = document.getElementById("backdrop");
+  if (backdrop) backdrop.classList.remove("active");
   document.querySelectorAll(".sheet").forEach(s => s.classList.remove("active"));
 }
 
 function openGuideSheet() {
-  document.getElementById("backdrop").classList.add("active");
-  document.getElementById("guide-sheet").classList.add("active");
+  triggerHaptic("light");
+  const backdrop = document.getElementById("backdrop");
+  const sheet = document.getElementById("guide-sheet");
+  if (backdrop) backdrop.classList.add("active");
+  if (sheet) sheet.classList.add("active");
 }
 
 function backToHome() {
@@ -351,11 +376,11 @@ function toggleSong() {
   if (!audio) return;
   if (audio.paused) {
     audio.play().then(() => {
-      btn.innerHTML = `<tg-emoji emoji-id="5388632425314140043">🔊</tg-emoji> <span data-i18n="song">Music</span> ON`;
+      if (btn) btn.innerHTML = `🔊 <span data-i18n="song">Music</span> ON`;
     }).catch(() => {});
   } else {
     audio.pause();
-    btn.innerHTML = `<tg-emoji emoji-id="5388632425314140043">🔈</tg-emoji> <span data-i18n="song">Music</span> OFF`;
+    if (btn) btn.innerHTML = `🔈 <span data-i18n="song">Music</span> OFF`;
   }
 }
 
