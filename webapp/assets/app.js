@@ -73,8 +73,7 @@ function pcardHTML(item){
   const media = item.photo_url
     ? `<img src="${item.photo_url}" style="width:100%; height:100%; object-fit:cover; border-radius:14px 14px 0 0;">`
     : item.category;
-  return `
-    <div class="pcard ${soldOut ? 'sold-out' : ''}">
+  const inner = `
       <div class="pcard-media" onclick="${item.photo_url ? `openLightbox('${item.photo_url}')` : `openProduct(${item.id})`}">
         ${isAccount ? `<div class="warranty-ribbon">🛡️${t('warranty_days', item.warranty_days || 14)}</div>` : `<div class="trade-badge">🔄 ${t('trade')}</div>`}
         ${item.is_new ? `<div class="new-badge">${t('new')}</div>` : ''}
@@ -88,8 +87,13 @@ function pcardHTML(item){
           <span class="stock">${isAccount ? '' : 'x' + item.quantity}</span>
         </div>
         <button class="buy-btn" onclick="openProduct(${item.id})" ${soldOut ? 'disabled' : ''}>${soldOut ? t('sold_out') : t('buy_now')}</button>
-      </div>
-    </div>`;
+      </div>`;
+  // Account items get the legendary shimmer border (rare-drop feel);
+  // trade items stay on the plain card style.
+  if(isAccount && !soldOut){
+    return `<div class="pcard legendary"><div class="pcard-inner">${inner}</div></div>`;
+  }
+  return `<div class="pcard ${soldOut ? 'sold-out' : ''}">${inner}</div>`;
 }
 
 function renderCatalog(items){
