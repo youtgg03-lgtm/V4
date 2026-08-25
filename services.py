@@ -58,6 +58,45 @@ def reject_order(order_id) -> bool:
     return True
 
 
+def poll_pending_khqr_orders():
+    """Checks Bakong for every pending order that has a khqr_md5 hash, and
+    auto-approves + delivers any that have been paid. This is what makes
+    auto-confirm actually work even when the buyer has closed the app —
+    api_order_status() alone only checks while someone's screen is open."""
+    for order in db.list_orders(status="pending"):
+        if not order.get("khqr_md5"):
+            continue
+        try:
+            if utils.check_khqr_paid(order["khqr_md5"]):
+                approve_order(order["id"])
+        except Exception as e:
+            print(f"[khqr-poll] order {order['id']} check failed: {e}")
+
+
+def start_khqr_background_poller(interval_seconds=20):
+    """Starts a daemon thread that calls poll_pending_khqr_orders() on a
+    fixed interval, for as long as the process runs. Safe to call more
+    than once (e.g. if both main.py and webapp_server.py import this
+    module) — only the first call actually starts the loop. A no-op cost
+    when BAKONG_API_TOKEN isn't set, since check_khqr_paid() returns
+    immediately without hitting the network in that case."""
+    import threading
+    import time as _time
+    if getattr(start_khqr_background_poller, "_started", False):
+        return
+    start_khqr_background_poller._started = True
+
+    def _loop():
+        while True:
+            try:
+                poll_pending_khqr_orders()
+            except Exception as e:
+                print(f"[khqr-poll] loop error: {e}")
+            _time.sleep(interval_seconds)
+
+    threading.Thread(target=_loop, daemon=True).start()
+
+
 def notify_admins_new_order(owner_ids, order_id, item, final_price):
     from telegram import InlineKeyboardMarkup, InlineKeyboardButton
     from config import ADMIN_BOT_TOKEN
