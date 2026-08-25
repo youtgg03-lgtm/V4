@@ -26,6 +26,7 @@ app = Flask(
     static_folder=None,  # we serve assets ourselves via /assets/<file>
 )
 db.init_db()
+services.start_khqr_background_poller()  # auto-confirm KHQR payments even when no one's app is open
 
 LOGO_URL = f"{WEBAPP_URL}/media/logo.png" if WEBAPP_URL and os.path.exists(os.path.join(MEDIA_DIR, "logo.png")) else ""
 MUSIC_URL = f"{WEBAPP_URL}/media/music.mp3" if WEBAPP_URL and os.path.exists(os.path.join(MEDIA_DIR, "music.mp3")) else ""
